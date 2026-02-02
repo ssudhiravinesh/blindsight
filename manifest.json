@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Blind-Sight",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scans Terms of Service for harmful clauses.",
   "permissions": [
     "activeTab",
@@ -12,5 +12,11 @@
   ],
   "action": {
     "default_popup": "popup.html"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/detector.js"]
+    }
+  ]
 }
