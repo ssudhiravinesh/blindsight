@@ -384,3 +384,587 @@
             </div>
         `;
     }
+
+    function injectStyles() {
+        if (document.getElementById('blind-sight-modal-styles')) return;
+
+        const styles = document.createElement('style');
+        styles.id = 'blind-sight-modal-styles';
+        styles.textContent = `
+            .blind-sight-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.85);
+                backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 2147483647;
+                animation: blindSightFadeIn 0.3s ease-out;
+            }
+
+            .blind-sight-overlay.blind-sight-orange {
+                background: rgba(0, 0, 0, 0.75);
+            }
+
+            .blind-sight-overlay.blind-sight-red {
+                background: rgba(20, 0, 0, 0.9);
+            }
+
+            @keyframes blindSightFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            @keyframes blindSightSlideIn {
+                from { 
+                    opacity: 0;
+                    transform: scale(0.9) translateY(-20px);
+                }
+                to { 
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+
+            @keyframes blindSightPulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+                50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            }
+
+            @keyframes blindSightOrangePulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+                50% { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+            }
+
+            @keyframes blindSightGlow {
+                0%, 100% { text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+                50% { text-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 30px rgba(239, 68, 68, 0.6); }
+            }
+
+            @keyframes blindSightShake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+
+            .blind-sight-modal {
+                background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+                border-radius: 16px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 85vh;
+                overflow-y: auto;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                animation: blindSightSlideIn 0.4s ease-out;
+            }
+
+            .blind-sight-modal-orange {
+                border: 2px solid #f97316;
+                box-shadow: 
+                    0 0 40px rgba(249, 115, 22, 0.3),
+                    0 8px 32px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                animation: blindSightSlideIn 0.4s ease-out, blindSightOrangePulse 2s ease-in-out infinite;
+            }
+
+            .blind-sight-modal-red {
+                border: 3px solid #ef4444;
+                box-shadow: 
+                    0 0 60px rgba(239, 68, 68, 0.4),
+                    0 8px 32px rgba(0, 0, 0, 0.5),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                animation: blindSightSlideIn 0.4s ease-out, blindSightPulse 1.5s ease-in-out infinite;
+            }
+
+            .blind-sight-modal-header {
+                text-align: center;
+                padding: 24px 24px 16px;
+            }
+
+            .blind-sight-modal-orange .blind-sight-modal-header {
+                border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+                background: linear-gradient(180deg, rgba(249, 115, 22, 0.1) 0%, transparent 100%);
+            }
+
+            .blind-sight-modal-red .blind-sight-modal-header {
+                border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+                background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, transparent 100%);
+            }
+
+            .blind-sight-warning-icon {
+                font-size: 48px;
+                margin-bottom: 12px;
+            }
+
+            .blind-sight-modal-red .blind-sight-warning-icon {
+                animation: blindSightGlow 1.5s ease-in-out infinite;
+            }
+
+            .blind-sight-title {
+                font-size: 22px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .blind-sight-modal-orange .blind-sight-title {
+                color: #f97316;
+            }
+
+            .blind-sight-modal-red .blind-sight-title {
+                color: #ef4444;
+            }
+
+            .blind-sight-subtitle {
+                color: #94a3b8;
+                font-size: 14px;
+                margin: 0;
+            }
+
+            .blind-sight-clauses {
+                padding: 16px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .blind-sight-clause {
+                background: rgba(0, 0, 0, 0.3);
+                border-left: 4px solid #f97316;
+                border-radius: 8px;
+                padding: 14px;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .blind-sight-clause:hover {
+                transform: translateX(4px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+
+            .blind-sight-clause-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+
+            .blind-sight-clause-icon {
+                font-size: 18px;
+            }
+
+            .blind-sight-clause-type {
+                font-weight: 600;
+                font-size: 13px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .blind-sight-clause-quote {
+                color: #fbbf24;
+                font-style: italic;
+                font-size: 12px;
+                line-height: 1.5;
+                padding: 8px 12px;
+                background: rgba(251, 191, 36, 0.1);
+                border-radius: 4px;
+                margin-bottom: 8px;
+            }
+
+            .blind-sight-clause-explanation {
+                color: #cbd5e1;
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .blind-sight-clause-mitigation {
+                margin-top: 8px;
+                padding: 8px 10px;
+                background: rgba(34, 197, 94, 0.1);
+                border-radius: 4px;
+                color: #22c55e;
+                font-size: 12px;
+            }
+
+            .blind-sight-modal-footer {
+                padding: 20px 24px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .blind-sight-modal-orange .blind-sight-modal-footer {
+                border-top: 1px solid rgba(249, 115, 22, 0.3);
+            }
+
+            .blind-sight-modal-red .blind-sight-modal-footer {
+                border-top: 1px solid rgba(239, 68, 68, 0.3);
+            }
+
+            .blind-sight-warning-text {
+                color: #94a3b8;
+                font-size: 13px;
+                text-align: center;
+                margin: 0 0 8px 0;
+            }
+
+            .blind-sight-countdown-number {
+                font-weight: 700;
+                font-size: 16px;
+                color: #f97316;
+            }
+
+            .blind-sight-confirm-section {
+                text-align: center;
+            }
+
+            .blind-sight-confirm-label {
+                color: #f87171;
+                font-size: 13px;
+                margin: 0 0 10px 0;
+            }
+
+            .blind-sight-confirm-input {
+                width: 100%;
+                padding: 12px 16px;
+                font-size: 14px;
+                font-family: inherit;
+                text-align: center;
+                background: rgba(0, 0, 0, 0.4);
+                border: 2px solid #4b5563;
+                border-radius: 8px;
+                color: #fff;
+                outline: none;
+                transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            }
+
+            .blind-sight-confirm-input:focus {
+                border-color: #ef4444;
+                box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+            }
+
+            .blind-sight-confirm-input.valid {
+                border-color: #22c55e;
+                box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+            }
+
+            .blind-sight-confirm-input.invalid {
+                animation: blindSightShake 0.3s ease-in-out;
+            }
+
+            .blind-sight-proceed-btn {
+                width: 100%;
+                padding: 14px 24px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .blind-sight-proceed-orange {
+                background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            }
+
+            .blind-sight-proceed-red {
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            }
+
+            .blind-sight-proceed-btn:disabled {
+                background: #374151;
+                cursor: not-allowed;
+                opacity: 0.7;
+            }
+
+            .blind-sight-proceed-btn:not(:disabled):hover {
+                transform: translateY(-2px);
+            }
+
+            .blind-sight-proceed-orange:not(:disabled):hover {
+                background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+            }
+
+            .blind-sight-proceed-red:not(:disabled):hover {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            }
+
+            .blind-sight-abort-btn {
+                width: 100%;
+                padding: 12px 24px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #10b981;
+                background: transparent;
+                border: 2px solid #10b981;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .blind-sight-abort-btn:hover {
+                background: rgba(16, 185, 129, 0.15);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            }
+
+            .blind-sight-modal::-webkit-scrollbar, 
+            .blind-sight-clauses::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .blind-sight-modal::-webkit-scrollbar-track, 
+            .blind-sight-clauses::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
+            }
+
+            .blind-sight-modal-orange::-webkit-scrollbar-thumb {
+                background: rgba(249, 115, 22, 0.5);
+                border-radius: 4px;
+            }
+
+            .blind-sight-modal-red::-webkit-scrollbar-thumb {
+                background: rgba(239, 68, 68, 0.5);
+                border-radius: 4px;
+            }
+
+            .blind-sight-alternatives {
+                padding: 16px 24px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .blind-sight-alt-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #10b981;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 12px;
+            }
+
+            .blind-sight-alt-header-icon {
+                font-size: 16px;
+            }
+
+            .blind-sight-alt-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .blind-sight-alt-card {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: rgba(16, 185, 129, 0.08);
+                border: 1px solid rgba(16, 185, 129, 0.2);
+                border-radius: 8px;
+                text-decoration: none;
+                color: inherit;
+                transition: all 0.2s ease;
+            }
+
+            .blind-sight-alt-card:hover {
+                background: rgba(16, 185, 129, 0.15);
+                border-color: rgba(16, 185, 129, 0.4);
+                transform: translateX(4px);
+            }
+
+            .blind-sight-alt-icon {
+                font-size: 24px;
+                flex-shrink: 0;
+            }
+
+            .blind-sight-alt-info {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                min-width: 0;
+            }
+
+            .blind-sight-alt-name {
+                font-weight: 600;
+                color: #10b981;
+                font-size: 14px;
+            }
+
+            .blind-sight-alt-reason {
+                font-size: 12px;
+                color: #94a3b8;
+                line-height: 1.4;
+            }
+
+            .blind-sight-alt-arrow {
+                color: #10b981;
+                font-size: 16px;
+                flex-shrink: 0;
+                opacity: 0.6;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+            }
+
+            .blind-sight-alt-card:hover .blind-sight-alt-arrow {
+                opacity: 1;
+                transform: translateX(2px);
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+
+    function showOrangeModal(clauses, options = {}) {
+        injectStyles();
+        hideWarningModal();
+        blockButtons(2);
+
+        const container = document.createElement('div');
+        container.innerHTML = createOrangeModalHTML(clauses, options.category, options.serviceName);
+        document.body.appendChild(container.firstElementChild);
+
+        let countdown = ORANGE_COUNTDOWN_SECONDS;
+        const countdownEl = document.getElementById('blind-sight-countdown');
+        const proceedBtn = document.getElementById('blind-sight-proceed-btn');
+        const abortBtn = document.getElementById('blind-sight-abort-btn');
+
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdownEl) {
+                countdownEl.textContent = countdown;
+            }
+            if (proceedBtn) {
+                proceedBtn.textContent = `⏳ Wait ${countdown} second${countdown !== 1 ? 's' : ''}...`;
+            }
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                if (proceedBtn) {
+                    proceedBtn.disabled = false;
+                    proceedBtn.textContent = '✓ I\'ve Read the Terms - Proceed';
+                }
+            }
+        }, 1000);
+
+        if (proceedBtn) {
+            proceedBtn.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+                hideWarningModal();
+                unblockButtons();
+            });
+        }
+
+        if (abortBtn) {
+            abortBtn.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+                window.close();
+                setTimeout(() => {
+                    window.history.back();
+                }, 100);
+            });
+        }
+    }
+
+    function showRedModal(clauses, options = {}) {
+        injectStyles();
+        hideWarningModal();
+        blockButtons(3);
+
+        const container = document.createElement('div');
+        container.innerHTML = createRedModalHTML(clauses, options.category, options.serviceName);
+        document.body.appendChild(container.firstElementChild);
+
+        const confirmInput = document.getElementById('blind-sight-confirm-input');
+        const proceedBtn = document.getElementById('blind-sight-proceed-btn');
+        const abortBtn = document.getElementById('blind-sight-abort-btn');
+
+        if (confirmInput) {
+            confirmInput.addEventListener('input', (e) => {
+                const value = e.target.value.toUpperCase().trim();
+                const isValid = value === CONFIRMATION_PHRASE;
+
+                confirmInput.classList.remove('valid', 'invalid');
+
+                if (isValid) {
+                    confirmInput.classList.add('valid');
+                    if (proceedBtn) {
+                        proceedBtn.disabled = false;
+                        proceedBtn.textContent = '🔓 Proceed at My Own Risk';
+                    }
+                } else {
+                    if (proceedBtn) {
+                        proceedBtn.disabled = true;
+                        proceedBtn.textContent = '🔒 Type "I PROCEED" to Unlock';
+                    }
+                }
+            });
+
+            confirmInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && confirmInput.value.toUpperCase().trim() !== CONFIRMATION_PHRASE) {
+                    confirmInput.classList.add('invalid');
+                    setTimeout(() => confirmInput.classList.remove('invalid'), 300);
+                }
+            });
+        }
+
+        if (proceedBtn) {
+            proceedBtn.addEventListener('click', () => {
+                if (!proceedBtn.disabled) {
+                    hideWarningModal();
+                    unblockButtons();
+                }
+            });
+        }
+
+        if (abortBtn) {
+            abortBtn.addEventListener('click', () => {
+                window.close();
+                setTimeout(() => {
+                    window.history.back();
+                }, 100);
+            });
+        }
+    }
+
+    function showWarningModal(clauses, severity = 3, options = {}) {
+        if (severity >= 3) {
+            showRedModal(clauses, options);
+        } else if (severity >= 2) {
+            showOrangeModal(clauses, options);
+        } else {
+        }
+    }
+
+    function hideWarningModal() {
+        const overlay = document.getElementById(OVERLAY_ID);
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    function isModalVisible() {
+        return document.getElementById(MODAL_ID) !== null;
+    }
+
+    window.BlindSightBlocker = {
+        blockButtons,
+        unblockButtons,
+        findTargetButtons,
+        showWarningModal,
+        showOrangeModal,
+        showRedModal,
+        hideWarningModal,
+        isModalVisible
+    };
+})();
