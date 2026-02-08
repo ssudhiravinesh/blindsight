@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Blind-Sight",
-  "version": "0.2.0",
-  "description": "Scans Terms of Service for harmful clauses.",
+  "version": "1.0.0",
+  "description": "Your Legal Firewall - Scans Terms of Service for harmful clauses.",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -13,10 +14,20 @@
   "action": {
     "default_popup": "popup/popup.html"
   },
+  "background": {
+    "service_worker": "background/background.js",
+    "type": "module"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/detector.js"]
+      "js": [
+        "content/detector.js",
+        "content/extractor.js",
+        "content/blocker.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }
