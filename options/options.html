@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blind-Sight Settings</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="shield-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <h1>Blind-Sight</h1>
+            </div>
+            <p class="tagline">Settings</p>
+        </header>
+
+        <main class="main">
+            <section class="settings-section">
+                <h2 class="section-title">OpenAI API Configuration</h2>
+                <p class="section-description">
+                    Enter your OpenAI API key to enable ToS analysis.
+                    <a href="https://platform.openai.com/api-keys" target="_blank" class="link">Get your API key →</a>
+                </p>
+
+                <form id="api-key-form" class="form">
+                    <div class="input-group">
+                        <label for="api-key" class="label">OpenAI API Key</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="api-key" class="input" placeholder="sk-..." autocomplete="off" />
+                            <button type="button" id="toggle-visibility" class="toggle-btn" title="Toggle visibility">
+                                <svg id="eye-icon" class="icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"
+                                        stroke="currentColor" stroke-width="2" />
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                <svg id="eye-off-icon" class="icon hidden" viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20C5 20 1 12 1 12A18.45 18.45 0 0 1 5.06 6.06M9.9 4.24A9.12 9.12 0 0 1 12 4C19 4 23 12 23 12A18.5 18.5 0 0 1 19.73 16.74"
+                                        stroke="currentColor" stroke-width="2" />
+                                    <path d="M1 1L23 23" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="save-btn" class="save-btn">
+                        <span class="btn-text">Save API Key</span>
+                        <svg id="check-icon" class="check-icon hidden" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </form>
+
+                <div id="status-message" class="status-message hidden"></div>
+            </section>
+
+            <section class="settings-section">
+                <h2 class="section-title">About</h2>
+                <div class="about-content">
+                    <p>Blind-Sight is your legal firewall. It scans Terms of Service agreements for:</p>
+                    <ul class="clause-list">
+                        <li><span class="clause-tag data">Data Selling</span> Third-party data sharing</li>
+                        <li><span class="clause-tag arbitration">Arbitration</span> No class action rights</li>
+                        <li><span class="clause-tag changes">Changes</span> Unilateral term modifications</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="settings-section model-info">
+                <h2 class="section-title">AI Model</h2>
+                <p class="model-badge">
+                    <span class="model-icon">🤖</span>
+                    <span>GPT-4o-mini</span>
+                </p>
+                <p class="model-description">Fast, accurate, and cost-effective (~$0.003 per scan)</p>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p class="version">Version 1.0.0</p>
+        </footer>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+
+</html>
