@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blind-Sight Demo - Demonstration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .demo-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 32px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .demo-card.green {
+            border-color: #22c55e;
+        }
+
+        .demo-card.green:hover {
+            box-shadow: 0 8px 32px rgba(34, 197, 94, 0.3);
+        }
+
+        .demo-card.orange {
+            border-color: #f97316;
+        }
+
+        .demo-card.orange:hover {
+            box-shadow: 0 8px 32px rgba(249, 115, 22, 0.3);
+        }
+
+        .demo-card.red {
+            border-color: #ef4444;
+        }
+
+        .demo-card.red:hover {
+            box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
+        }
+
+        .demo-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .demo-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .demo-severity {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .green .demo-severity {
+            background: #22c55e;
+        }
+
+        .orange .demo-severity {
+            background: #f97316;
+        }
+
+        .red .demo-severity {
+            background: #ef4444;
+        }
+
+        .demo-description {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .demo-behavior {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .demo-behavior strong {
+            display: block;
+            margin-bottom: 4px;
+            color: white;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .instructions h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #667eea;
+        }
+
+        .instructions ol {
+            margin-left: 24px;
+            color: #94a3b8;
+        }
+
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .instructions code {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #a5b4fc;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #667eea;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🛡️</div>
+            <h1>Blind-Sight Demo</h1>
+            <p class="tagline">Your Legal Firewall - Demonstration</p>
+        </header>
+
+        <div class="instructions">
+            <h2>📋 How to Demo</h2>
+            <ol>
+                <li>Make sure the <strong>Blind-Sight extension is loaded</strong> in Chrome (chrome://extensions → Load
+                    unpacked)</li>
+                <li>Click on any of the demo pages below</li>
+                <li>Click the <strong>"Scan This Page"</strong> button in the extension popup</li>
+                <li>Watch the extension analyze the ToS and display appropriate warnings!</li>
+            </ol>
+        </div>
+
+        <div class="demo-grid">
+            <a href="demo-signup-green.html" class="demo-card green">
+                <div class="demo-icon">🟢</div>
+                <div class="demo-title">SafeApp</div>
+                <span class="demo-severity">Tier 0 - Standard</span>
+                <p class="demo-description">
+                    A fake signup page with completely standard, industry-normal terms.
+                    No concerning clauses.
+                </p>
+                <div class="demo-behavior">
+                    <strong>Expected Behavior:</strong>
+                    Green checkmark ✓ badge, no modal, "Terms Look Good" message in popup.
+                </div>
+            </a>
+
+            <a href="demo-signup-orange.html" class="demo-card orange">
+                <div class="demo-icon">🟠</div>
+                <div class="demo-title">DataHarvest</div>
+                <span class="demo-severity">Tier 2 - Cautionary</span>
+                <p class="demo-description">
+                    Data sharing with advertisers, 7-day notice for changes, binding arbitration with short opt-out.
+                </p>
+                <div class="demo-behavior">
+                    <strong>Expected Behavior:</strong>
+                    Orange ⚠ badge, <strong>10-SECOND COUNTDOWN MODAL</strong> before proceeding.
+                </div>
+            </a>
+
+            <a href="demo-signup-red.html" class="demo-card red">
+                <div class="demo-icon">🔴</div>
+                <div class="demo-title">TotalCapture</div>
+                <span class="demo-severity">Tier 3 - Critical</span>
+                <p class="demo-description">
+                    Perpetual content rights, explicit data broker sales, no-notice changes, no-opt-out arbitration.
+                </p>
+                <div class="demo-behavior">
+                    <strong>Expected Behavior:</strong>
+                    Red ! badge, <strong>MUST TYPE "I PROCEED"</strong> to unlock the proceed button.
+                </div>
+            </a>
+        </div>
+
+        <footer>
+            <p>Built for demonstration purposes. <a href="../masterplan.md">View Master Plan</a></p>
+        </footer>
+    </div>
+</body>
+
+</html>
