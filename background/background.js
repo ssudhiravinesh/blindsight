@@ -1,4 +1,5 @@
-import { analyzeTOS } from '../lib/openai.js';
+import { analyzeTOS, analyzeTOSviaServer } from '../lib/openai.js';
+import { isPdfUrl, isPdfContentType, fetchAndExtractPdf, extractTextFromPdf } from '../lib/pdf-parser.js';
 
 async function getApiKey() {
     return new Promise((resolve) => {
@@ -81,6 +82,11 @@ function extractTextFromHTML(html) {
 
 async function fetchTosContent(url) {
     try {
+        // Check if URL looks like a PDF before fetching
+        if (isPdfUrl(url)) {
+            return await fetchAndExtractPdf(url);
+        }
+
         const response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -90,6 +96,14 @@ async function fetchTosContent(url) {
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
+        }
+
+        // Check Content-Type header - might be a PDF even without .pdf extension
+        const contentType = response.headers.get('Content-Type') || '';
+        if (isPdfContentType(contentType)) {
+            const arrayBuffer = await response.arrayBuffer();
+            const pdfResult = await extractTextFromPdf(arrayBuffer);
+            return { ...pdfResult, url };
         }
 
         const html = await response.text();
@@ -121,12 +135,6 @@ function getBadgeFromSeverity(severity) {
 }
 
 async function handleAnalyzeTOS(request, sender) {
-    const apiKey = await getApiKey();
-
-    if (!apiKey) {
-        return { error: 'OpenAI API key not configured. Please add your API key in Settings.' };
-    }
-
     const tabId = sender.tab?.id;
     setBadge('scanning', tabId);
 
@@ -138,7 +146,25 @@ async function handleAnalyzeTOS(request, sender) {
             return { error: 'No Terms of Service text found to analyze.' };
         }
 
-        const result = await analyzeTOS(apiKey, tosText);
+        let result;
+        const sourceUrl = sender.tab?.url || null;
+
+        // Strategy: try Syndicate Server first, fall back to OpenAI BYOK
+        try {
+            result = await analyzeTOSviaServer(tosText, sourceUrl);
+            console.log('[Blind-Sight BG] Analysis via Syndicate Server succeeded.');
+        } catch (serverError) {
+            console.warn('[Blind-Sight BG] Syndicate Server failed, trying OpenAI fallback:', serverError.message);
+
+            const apiKey = await getApiKey();
+            if (!apiKey) {
+                // No fallback available — surface server error
+                throw new Error('Analysis server unavailable and no OpenAI API key configured. Please try again later or add an API key in Settings.');
+            }
+
+            result = await analyzeTOS(apiKey, tosText);
+            console.log('[Blind-Sight BG] Analysis via OpenAI fallback succeeded.');
+        }
 
         const severity = result.overallSeverity || 0;
         const badgeType = getBadgeFromSeverity(severity);
@@ -180,6 +206,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         case 'FETCH_TOS':
             fetchTosContent(request.url)
+                .then(result => sendResponse(result))
+                .catch(error => sendResponse({ success: false, error: error.message }));
+            return true;
+
+        case 'FETCH_PDF_TOS':
+            fetchAndExtractPdf(request.url)
                 .then(result => sendResponse(result))
                 .catch(error => sendResponse({ success: false, error: error.message }));
             return true;

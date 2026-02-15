@@ -2,10 +2,10 @@
     'use strict';
 
     const CONFIG = {
-        SIGNUP_THRESHOLD: 50,           
-        AUTO_SCAN_ENABLED: true,        
-        SCAN_DELAY_MS: 1000,            
-        MAX_TOS_LENGTH: 30000,          
+        SIGNUP_THRESHOLD: 50,
+        AUTO_SCAN_ENABLED: true,
+        SCAN_DELAY_MS: 1000,
+        MAX_TOS_LENGTH: 30000,
     };
 
     let scanInProgress = false;
@@ -69,8 +69,10 @@
             if (!extraction.success) {
                 if (extraction.needsBackgroundFetch) {
 
+                    // Use PDF-specific handler if the link is a PDF
+                    const messageType = extraction.isPdf ? 'FETCH_PDF_TOS' : 'FETCH_TOS';
                     const backgroundResult = await sendToBackground({
-                        type: 'FETCH_TOS',
+                        type: messageType,
                         url: extraction.url
                     });
 
@@ -206,7 +208,7 @@
                 handleManualScan()
                     .then(result => sendResponse(result))
                     .catch(error => sendResponse({ error: error.message }));
-                return true; 
+                return true;
 
             case 'GET_PAGE_STATUS':
                 sendResponse(getPageStatus());

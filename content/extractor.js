@@ -12,6 +12,21 @@ const TOS_LINK_KEYWORDS = [
     '/tos',
 ];
 
+/**
+ * Check if a URL points to a PDF document.
+ * @param {string} url
+ * @returns {boolean}
+ */
+function isPdfUrl(url) {
+    if (!url) return false;
+    try {
+        const urlObj = new URL(url);
+        return urlObj.pathname.toLowerCase().endsWith('.pdf');
+    } catch {
+        return url.toLowerCase().endsWith('.pdf');
+    }
+}
+
 const LEGAL_LINK_KEYWORDS = [
     'privacy policy',
     'privacy',
@@ -46,7 +61,8 @@ function findTosLinks() {
                 url: href,
                 text: text || 'Terms of Service',
                 type: 'tos',
-                priority: 1
+                priority: 1,
+                isPdf: isPdfUrl(href)
             });
             seenUrls.add(href);
             continue;
@@ -57,7 +73,8 @@ function findTosLinks() {
                 url: href,
                 text: text || 'Legal Document',
                 type: 'legal',
-                priority: 2
+                priority: 2,
+                isPdf: isPdfUrl(href)
             });
             seenUrls.add(href);
         }
@@ -130,6 +147,17 @@ function extractTextFromHtml(html) {
 }
 
 async function fetchAndExtractText(url) {
+    // PDF files must be parsed by the background script (which has pdf.js loaded)
+    if (isPdfUrl(url)) {
+        return {
+            success: false,
+            url,
+            error: 'PDF document - delegating to background',
+            needsBackgroundFetch: true,
+            isPdf: true
+        };
+    }
+
     try {
         const response = await fetch(url, {
             method: 'GET',
@@ -142,6 +170,18 @@ async function fetchAndExtractText(url) {
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Check if the response is actually a PDF (redirects, no .pdf extension)
+        const contentType = response.headers.get('Content-Type') || '';
+        if (contentType.toLowerCase().includes('application/pdf')) {
+            return {
+                success: false,
+                url,
+                error: 'PDF document - delegating to background',
+                needsBackgroundFetch: true,
+                isPdf: true
+            };
         }
 
         const html = await response.text();
@@ -169,6 +209,14 @@ function checkIfTosPage() {
     const url = window.location.href.toLowerCase();
     const title = document.title.toLowerCase();
     const h1 = document.querySelector('h1')?.textContent?.toLowerCase() || '';
+
+    // Check if this is a PDF page with ToS-related name
+    if (isPdfUrl(url)) {
+        const tosPatterns = ['terms', 'tos', 'legal', 'privacy', 'eula', 'agreement'];
+        if (tosPatterns.some(p => url.includes(p))) {
+            return true;
+        }
+    }
 
     const tosPatterns = [
         'terms', 'tos', 'terms-of-service', 'terms_of_service',
