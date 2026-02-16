@@ -168,3 +168,111 @@ export interface ExtractionFailure {
 
 export type ExtractionResult = ExtractionSuccess | ExtractionFailure;
 
+// ─── Page Status ────────────────────────────────────────
+export interface PageStatus {
+    isSignup: boolean;
+    detection: SignupDetection;
+    tosLinks: TosLink[];
+    lastScanResult: ScanResponse | null;
+    scanInProgress: boolean;
+    error?: string;
+}
+
+export interface SignupDetection {
+    isSignup?: boolean;
+    score: number;
+    indicators: string[];
+    details: {
+        passwordFields: number;
+        emailFields: number;
+        signupButtons: number;
+        termsCheckboxes: number;
+        hasForm: boolean;
+    };
+}
+
+// ─── Messages ───────────────────────────────────────────
+export interface AnalyzeTosMessage {
+    type: 'ANALYZE_TOS';
+    tosText: string;
+    source?: string;
+}
+
+export interface FetchTosMessage {
+    type: 'FETCH_TOS';
+    url: string;
+}
+
+export interface GetHistoryMessage {
+    type: 'GET_HISTORY';
+}
+
+export interface GetLastResultMessage {
+    type: 'GET_LAST_RESULT';
+}
+
+export interface PageDetectedMessage {
+    type: 'PAGE_DETECTED';
+    isSignup: boolean;
+    url: string;
+    detection: SignupDetection;
+}
+
+export interface AutoScanCompleteMessage {
+    type: 'AUTO_SCAN_COMPLETE';
+    result: ScanResponse;
+    url: string;
+}
+
+export interface ManualScanMessage {
+    type: 'MANUAL_SCAN';
+}
+
+export interface GetPageStatusMessage {
+    type: 'GET_PAGE_STATUS';
+}
+
+export type BackgroundMessage =
+    | AnalyzeTosMessage
+    | FetchTosMessage
+    | GetHistoryMessage
+    | GetLastResultMessage
+    | PageDetectedMessage
+    | AutoScanCompleteMessage;
+
+export type ContentMessage =
+    | ManualScanMessage
+    | GetPageStatusMessage;
+
+// ─── Alternatives ───────────────────────────────────────
+export interface Alternative {
+    name: string;
+    url: string;
+    reason: string;
+    icon: string;
+}
+
+export interface AlternativeCategory {
+    displayName: string;
+    alternatives: Alternative[];
+}
+
+// ─── Helpers ────────────────────────────────────────────
+export function isScanError(response: ScanResponse): response is ScanError {
+    return 'error' in response;
+}
+
+export function severityToGrade(severity: SeverityKey): string {
+    const grades: Record<SeverityKey, string> = { 0: 'A', 1: 'B', 2: 'C', 3: 'F' };
+    return grades[severity] ?? 'A';
+}
+
+export function getSeverityColor(severity: SeverityKey): string {
+    const colors: Record<SeverityKey, string> = {
+        0: '#22c55e',
+        1: '#eab308',
+        2: '#f97316',
+        3: '#ef4444',
+    };
+    return colors[severity] ?? colors[0];
+}
