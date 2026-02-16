@@ -88,3 +88,83 @@ export interface Clause {
     mitigation?: string | null;
 }
 
+// ─── Scan / Analysis ────────────────────────────────────
+export type ServiceCategory =
+    | 'vpn'
+    | 'email'
+    | 'cloud_storage'
+    | 'social_media'
+    | 'messaging'
+    | 'video_conferencing'
+    | 'search'
+    | 'browser'
+    | 'password_manager'
+    | 'notes'
+    | 'ai_assistant'
+    | 'file_sharing'
+    | 'unknown';
+
+export interface ScanResult {
+    overallSeverity: SeverityKey;
+    category?: ServiceCategory;
+    serviceName?: string;
+    summary?: string;
+    clauses: Clause[];
+    hostname?: string;
+    lethal?: boolean;
+    parseError?: boolean;
+    rawResponse?: string;
+}
+
+export interface ScanError {
+    error: string;
+    fetchFailed?: boolean;
+    url?: string;
+}
+
+export type ScanResponse = ScanResult | ScanError;
+
+// ─── History ────────────────────────────────────────────
+export interface HistoryEntry {
+    id: number;
+    hostname: string;
+    url: string;
+    timestamp: number;
+    severity: SeverityKey;
+    summary: string;
+    clauseCount: number;
+    category: string;
+    serviceName: string;
+}
+
+// ─── TOS Extraction ─────────────────────────────────────
+export interface TosLink {
+    url: string;
+    text: string;
+    type: 'tos' | 'legal';
+    priority: number;
+}
+
+export interface ExtractionSuccess {
+    success: true;
+    source: string;
+    text: string;
+    charCount: number;
+    linkText?: string;
+    allLinks?: TosLink[];
+    info?: string;
+}
+
+export interface ExtractionFailure {
+    success: false;
+    error: string;
+    source?: string | null;
+    text?: null;
+    needsBackgroundFetch?: boolean;
+    url?: string;
+    linkText?: string;
+    allLinks?: TosLink[];
+}
+
+export type ExtractionResult = ExtractionSuccess | ExtractionFailure;
+
