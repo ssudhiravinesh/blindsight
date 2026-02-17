@@ -582,15 +582,7 @@ async function handleScan() {
  */
 function openSettings(e) {
   if (e) e.preventDefault();
-
-  if (chrome.runtime.openOptionsPage) {
-    chrome.runtime.openOptionsPage().catch(err => {
-      console.error('openOptionsPage failed, using fallback:', err);
-      chrome.tabs.create({ url: chrome.runtime.getURL('options/options.html') });
-    });
-  } else {
-    chrome.tabs.create({ url: chrome.runtime.getURL('options/options.html') });
-  }
+  chrome.runtime.openOptionsPage();
 }
 
 /**

@@ -212,4 +212,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => {
     chrome.storage.session.remove([`result_${tabId}`, `detected_${tabId}`]);
-});// fix: handled fetch error
+});
