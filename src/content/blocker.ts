@@ -144,3 +144,155 @@ function createAlternativesHTML(category?: string): string {
       `).join('')}
     </div>`;
 }
+
+function createOrangeModalHTML(clauses: Clause[], category?: string, serviceName?: string): string {
+    const name = serviceName ?? 'this service';
+    return `
+    <div id="${OVERLAY_ID}">
+      <div id="${MODAL_ID}">
+        <div class="bs-modal-header orange">
+          <div class="bs-modal-title">⚠️ Cautionary Terms Detected</div>
+          <div class="bs-modal-subtitle">Blind-Sight found concerning terms in ${name}'s agreement</div>
+        </div>
+        <div class="bs-modal-body">
+          <ul class="bs-clause-list">${createClausesHTML(clauses, 'orange')}</ul>
+          ${createAlternativesHTML(category)}
+        </div>
+        <div class="bs-modal-footer">
+          <button id="blind-sight-abort-btn" class="bs-btn bs-btn-abort">✕ Leave This Page</button>
+          <button id="blind-sight-proceed-btn" class="bs-btn bs-btn-proceed" disabled>⏳ Wait <span id="blind-sight-countdown">${ORANGE_COUNTDOWN_SECONDS}</span> seconds...</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function createRedModalHTML(clauses: Clause[], category?: string, serviceName?: string): string {
+    const name = serviceName ?? 'this service';
+    return `
+    <div id="${OVERLAY_ID}">
+      <div id="${MODAL_ID}">
+        <div class="bs-modal-header red">
+          <div class="bs-modal-title">🚨 Critical Terms — High Risk</div>
+          <div class="bs-modal-subtitle">Blind-Sight detected aggressive terms in ${name}'s agreement</div>
+        </div>
+        <div class="bs-modal-body">
+          <ul class="bs-clause-list">${createClausesHTML(clauses, 'red')}</ul>
+          ${createAlternativesHTML(category)}
+          <div class="bs-confirm-label">Type <strong>"I PROCEED"</strong> to unlock</div>
+          <input id="blind-sight-confirm-input" class="bs-confirm-input" type="text" placeholder="Type here..." autocomplete="off" />
+        </div>
+        <div class="bs-modal-footer">
+          <button id="blind-sight-abort-btn" class="bs-btn bs-btn-abort">✕ Leave This Page</button>
+          <button id="blind-sight-proceed-btn" class="bs-btn bs-btn-proceed" disabled>🔒 Type "I PROCEED" to Unlock</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── Modal lifecycle ────────────────────────────────────
+function showOrangeModal(clauses: Clause[], options: { category?: string; serviceName?: string } = {}): void {
+    injectStyles();
+    hideWarningModal();
+    blockButtons(2);
+
+    const container = document.createElement('div');
+    container.innerHTML = createOrangeModalHTML(clauses, options.category, options.serviceName);
+    document.body.appendChild(container.firstElementChild!);
+
+    let countdown = ORANGE_COUNTDOWN_SECONDS;
+    const countdownEl = document.getElementById('blind-sight-countdown');
+    const proceedBtn = document.getElementById('blind-sight-proceed-btn') as HTMLButtonElement | null;
+    const abortBtn = document.getElementById('blind-sight-abort-btn');
+
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdownEl) countdownEl.textContent = String(countdown);
+        if (proceedBtn) proceedBtn.textContent = `⏳ Wait ${countdown} second${countdown !== 1 ? 's' : ''}...`;
+
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            if (proceedBtn) {
+                proceedBtn.disabled = false;
+                proceedBtn.textContent = "✓ I've Read the Terms - Proceed";
+            }
+        }
+    }, 1000);
+
+    proceedBtn?.addEventListener('click', () => {
+        clearInterval(countdownInterval);
+        hideWarningModal();
+        unblockButtons();
+    });
+
+    abortBtn?.addEventListener('click', () => {
+        clearInterval(countdownInterval);
+        window.close();
+        setTimeout(() => window.history.back(), 100);
+    });
+}
+
+function showRedModal(clauses: Clause[], options: { category?: string; serviceName?: string } = {}): void {
+    injectStyles();
+    hideWarningModal();
+    blockButtons(3);
+
+    const container = document.createElement('div');
+    container.innerHTML = createRedModalHTML(clauses, options.category, options.serviceName);
+    document.body.appendChild(container.firstElementChild!);
+
+    const confirmInput = document.getElementById('blind-sight-confirm-input') as HTMLInputElement | null;
+    const proceedBtn = document.getElementById('blind-sight-proceed-btn') as HTMLButtonElement | null;
+    const abortBtn = document.getElementById('blind-sight-abort-btn');
+
+    confirmInput?.addEventListener('input', (e) => {
+        const value = (e.target as HTMLInputElement).value.toUpperCase().trim();
+        const isValid = value === CONFIRMATION_PHRASE;
+
+        confirmInput.classList.remove('valid', 'invalid');
+        if (isValid) {
+            confirmInput.classList.add('valid');
+            if (proceedBtn) {
+                proceedBtn.disabled = false;
+                proceedBtn.textContent = '🔓 Proceed at My Own Risk';
+            }
+        } else if (proceedBtn) {
+            proceedBtn.disabled = true;
+            proceedBtn.textContent = '🔒 Type "I PROCEED" to Unlock';
+        }
+    });
+
+    confirmInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && confirmInput.value.toUpperCase().trim() !== CONFIRMATION_PHRASE) {
+            confirmInput.classList.add('invalid');
+            setTimeout(() => confirmInput.classList.remove('invalid'), 300);
+        }
+    });
+
+    proceedBtn?.addEventListener('click', () => {
+        if (!proceedBtn.disabled) { hideWarningModal(); unblockButtons(); }
+    });
+
+    abortBtn?.addEventListener('click', () => {
+        window.close();
+        setTimeout(() => window.history.back(), 100);
+    });
+}
+
+export function showWarningModal(
+    clauses: Clause[],
+    severity: SeverityKey = 3,
+    options: { category?: string; serviceName?: string } = {},
+): void {
+    if (severity >= 3) showRedModal(clauses, options);
+    else if (severity >= 2) showOrangeModal(clauses, options);
+}
+
+export function hideWarningModal(): void {
+    document.getElementById(OVERLAY_ID)?.remove();
+}
+
+export function isModalVisible(): boolean {
+    return document.getElementById(MODAL_ID) !== null;
+}
+
+export { findTargetButtons, blockButtons, unblockButtons };
