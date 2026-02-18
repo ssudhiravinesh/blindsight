@@ -155,3 +155,143 @@ async function fetchAndExtractText(url: string): Promise<{ success: boolean; url
         return { success: false, url, error: 'Content script fetch blocked', needsBackgroundFetch: true };
     }
 }
+
+// ─── Is ToS Page ────────────────────────────────────────
+function checkIfTosPage(): boolean {
+    const url = window.location.href.toLowerCase();
+    const title = document.title.toLowerCase();
+    const h1 = document.querySelector('h1')?.textContent?.toLowerCase() ?? '';
+
+    const tosPatterns = [
+        'terms', 'tos', 'terms-of-service', 'terms_of_service', 'termsofservice',
+        'terms-of-use', 'terms_of_use', 'user-agreement', 'user_agreement',
+        'useragreement', 'legal/terms', 'policies/terms', 'about/terms',
+        'eula', 'end-user-license', 'service-agreement', 'privacy-policy',
+        'privacy_policy', 'privacypolicy',
+    ];
+
+    for (const p of tosPatterns) if (url.includes(p)) return true;
+
+    const titlePatterns = [
+        'terms of service', 'terms and conditions', 'terms of use',
+        'user agreement', 'service agreement', 'legal terms',
+        'privacy policy', 'tos', 'eula',
+    ];
+
+    for (const p of titlePatterns) if (title.includes(p) || h1.includes(p)) return true;
+
+    return false;
+}
+
+function extractMainContent(): string | null {
+    const selectors = [
+        'main', 'article', '[role="main"]', '.main-content',
+        '.content', '.page-content', '.article-content',
+        '.legal-content', '.terms-content', '.tos-content',
+        '#content', '#main', '#main-content',
+    ];
+
+    for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el && (el.textContent?.trim().length ?? 0) > 500) return el.textContent!.trim();
+    }
+
+    const body = document.body.cloneNode(true) as HTMLElement;
+    ['nav', 'header', 'footer', 'aside', '.sidebar', '.nav', '.menu', 'script', 'style'].forEach((s) => {
+        body.querySelectorAll(s).forEach((el) => el.remove());
+    });
+
+    const text = body.textContent?.trim() ?? '';
+    return text.length > 500 ? text : null;
+}
+
+function extractInlineToS(): string | null {
+    const selectors = [
+        '[data-tos]', '[data-tos="true"]', '[data-terms]', '[data-terms-of-service]',
+        '.terms-content', '.tos-content', '.legal-text', '.terms-of-service',
+        '.terms-and-conditions', '.legal-content', '.legal-terms',
+        '#terms-text', '#tos-text', '#terms', '#tos',
+        '#terms-of-service', '#terms-and-conditions', '#legal-content', '#legal-terms',
+        '.terms-modal', '.tos-modal', '.terms-container', '.tos-container',
+    ];
+
+    for (const sel of selectors) {
+        try {
+            const el = document.querySelector(sel);
+            if (el && (el.textContent?.trim().length ?? 0) > 200) return el.textContent!.trim();
+        } catch { /* skip */ }
+    }
+    return null;
+}
+
+// ─── Guess well-known ToS URLs ──────────────────────────
+function guessWellKnownUrls(): TosLink[] {
+    const origin = window.location.origin;
+    return WELL_KNOWN_PATHS.map((path) => ({
+        url: `${origin}${path}`,
+        text: path.includes('privacy') ? 'Privacy Policy' : 'Terms of Service',
+        type: (path.includes('privacy') ? 'legal' : 'tos') as 'tos' | 'legal',
+        priority: 3,
+    }));
+}
+
+// ─── Main Extraction ────────────────────────────────────
+export async function extractTosText(): Promise<ExtractionResult> {
+    // 1. Check if current page IS a ToS page
+    if (checkIfTosPage()) {
+        const pageContent = extractMainContent();
+        if (pageContent && pageContent.length > 500) {
+            return {
+                success: true,
+                source: 'current-page',
+                text: pageContent,
+                charCount: pageContent.length,
+                info: 'Analyzed current page as Terms of Service',
+            };
+        }
+    }
+
+    // 2. Check for inline ToS content on current page
+    const inlineText = extractInlineToS();
+    if (inlineText) {
+        return { success: true, source: 'inline', text: inlineText, charCount: inlineText.length };
+    }
+
+    // 3. Find ToS/Privacy links on the page
+    let tosLinks = findTosLinks();
+
+    // 4. If no links found on page, try well-known URL patterns
+    if (tosLinks.length === 0) {
+        tosLinks = guessWellKnownUrls();
+    }
+
+    if (tosLinks.length === 0) {
+        return { success: false, error: 'No Terms of Service links found on this page', source: null, text: null };
+    }
+
+    // 5. Try to fetch the best link from content script
+    const primary = tosLinks[0];
+    const result = await fetchAndExtractText(primary.url);
+
+    if (result.success && result.text) {
+        return {
+            success: true, source: primary.url,
+            linkText: primary.text, text: result.text,
+            charCount: result.charCount!, allLinks: tosLinks,
+        };
+    }
+
+    // 6. Always request background fetch as fallback (CORS bypass)
+    return {
+        success: false, needsBackgroundFetch: true,
+        url: primary.url, linkText: primary.text,
+        error: result.error ?? 'Content script cannot fetch this URL',
+        allLinks: tosLinks,
+    };
+}
+
+export function getTosLinkForBackgroundFetch(): { url: string; text: string; allLinks: TosLink[] } | null {
+    const tosLinks = findTosLinks();
+    if (tosLinks.length === 0) return null;
+    return { url: tosLinks[0].url, text: tosLinks[0].text, allLinks: tosLinks };
+}
