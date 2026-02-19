@@ -1,4 +1,4 @@
-import { analyzeTOS } from '../lib/openai';
+import { analyzeTOS, analyzeTOSviaServer } from '../lib/openai';
 import { getApiKey } from '../lib/storage';
 import type { HistoryEntry, ScanResult, SeverityKey } from '../lib/types';
 
@@ -110,9 +110,6 @@ async function handleAnalyzeTOS(
     request: { tosText: string },
     sender: chrome.runtime.MessageSender,
 ): Promise<ScanResult | { error: string }> {
-    const apiKey = await getApiKey();
-    if (!apiKey) return { error: 'OpenAI API key not configured. Please add your API key in Settings.' };
-
     const tabId = sender.tab?.id;
     setBadge('scanning', tabId);
 
@@ -123,7 +120,37 @@ async function handleAnalyzeTOS(
             return { error: 'No Terms of Service text found to analyze.' };
         }
 
-        const result = await analyzeTOS(apiKey, tosText);
+        // Strategy: server-first, OpenAI-fallback
+        let result: ScanResult | null = null;
+        let serverError: string | null = null;
+
+        // 1. Try Syndicate Server first
+        try {
+            result = await analyzeTOSviaServer(tosText, sender.tab?.url);
+        } catch (error) {
+            serverError = (error as Error).message;
+            console.warn('[Blind-Sight BG] Syndicate server failed, trying OpenAI fallback:', serverError);
+        }
+
+        // 2. Fallback to OpenAI if server failed
+        if (!result) {
+            const apiKey = await getApiKey();
+            if (apiKey) {
+                try {
+                    result = await analyzeTOS(apiKey, tosText);
+                } catch (error) {
+                    const openaiError = (error as Error).message;
+                    console.error('[Blind-Sight BG] OpenAI fallback also failed:', openaiError);
+                    setBadge('error', tabId);
+                    return { error: `Analysis server unavailable and OpenAI fallback failed: ${openaiError}` };
+                }
+            } else {
+                // No API key configured and server failed
+                setBadge('error', tabId);
+                return { error: 'Analysis server unavailable and no OpenAI API key configured.' };
+            }
+        }
+
         const severity = result.overallSeverity ?? 0;
         setBadge(getBadgeFromSeverity(severity), tabId);
 

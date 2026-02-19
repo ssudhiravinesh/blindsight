@@ -1,6 +1,11 @@
 import type { ScanResult, SeverityKey } from './types';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+
+// ── Syndicate Server (our API gateway) ──────────────────────────
+const SYNDICATE_SERVER_URL = 'https://blindsight-production.up.railway.app/api/v1/analyze';
+const SYNDICATE_API_KEY = 'blindsight_key_1';
+
 const MAX_TOS_LENGTH = 30000;
 
 const SYSTEM_PROMPT = `You are an expert legal document analyzer specializing in Terms of Service agreements. Your job is to analyze ToS text and classify concerning clauses by SEVERITY LEVEL.
@@ -130,6 +135,47 @@ function parseResponse(responseText: string): ScanResult {
     }
 }
 
+export async function analyzeTOSviaServer(tosText: string, sourceUrl?: string): Promise<ScanResult> {
+    if (!tosText || tosText.trim().length === 0) throw new Error('No ToS text provided');
+
+    const text = truncateText(tosText.trim());
+
+    try {
+        const response = await fetch(SYNDICATE_SERVER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': SYNDICATE_API_KEY,
+            },
+            body: JSON.stringify({
+                tos_text: text,
+                source_url: sourceUrl ?? '',
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+            if (response.status === 401 || response.status === 403) throw new Error('Syndicate server authentication failed.');
+            if (response.status === 429) throw new Error('Syndicate server rate limit exceeded. Please wait and try again.');
+            if (response.status >= 500) throw new Error(`Syndicate server error (${response.status}). Please try again later.`);
+
+            const errMsg = (errorData as Record<string, string>)?.detail;
+            throw new Error(errMsg ?? `Syndicate server request failed with status ${response.status}`);
+        }
+
+        const data = await response.json() as Record<string, unknown>;
+
+        // The server returns the analysis JSON directly — normalize it through parseResponse
+        return parseResponse(JSON.stringify(data));
+    } catch (error) {
+        const msg = (error as Error).message;
+        if (msg.includes('Syndicate server')) throw error;
+        console.error('Syndicate server error:', error);
+        throw new Error(`Syndicate server unavailable: ${msg}`);
+    }
+}
+
 export async function analyzeTOS(apiKey: string, tosText: string): Promise<ScanResult> {
     if (!apiKey) throw new Error('API key is required');
     if (!tosText || tosText.trim().length === 0) throw new Error('No ToS text provided');
@@ -184,6 +230,7 @@ export async function analyzeTOS(apiKey: string, tosText: string): Promise<ScanR
         throw new Error(`Failed to analyze ToS: ${msg}`);
     }
 }
+
 
 export interface SeverityInfo {
     name: string;

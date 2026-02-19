@@ -2,3 +2,11 @@ node_modules/
 dist/
 .DS_Store
 *.local
+
+# Syndicate Server (Python)
+syndicate-server/venv/
+syndicate-server/.venv/
+syndicate-server/__pycache__/
+syndicate-server/**/__pycache__/
+syndicate-server/.env
+syndicate-server/*.pyc
