@@ -218,7 +218,7 @@ async function checkForTosUpdates() {
 
                         chrome.notifications.create({
                             type: 'basic',
-                            iconUrl: 'src/assets/icon-128.png',
+                            iconUrl: chrome.runtime.getURL('src/assets/icon-128.png'),
                             title,
                             message,
                             priority: severity >= 2 ? 2 : 0
@@ -248,8 +248,9 @@ async function checkForTosUpdates() {
 // Setup the alarm
 chrome.runtime.onInstalled.addListener(() => {
     // Run once every 24 hours (1440 minutes)
-    // For quick testing, you can change this to 1 minute
     chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: 1440 });
+    // Also run immediately on install/update
+    checkForTosUpdates();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {

@@ -110,11 +110,13 @@ async function autoScanIfSignup(): Promise<void> {
 
     if (!detection.isSignup) return;
 
+    // Always track agreement buttons on signup pages, even without a ToS link
+    attachAgreementListeners();
+
     const tosLink = getTosLinkForBackgroundFetch();
     if (!tosLink) return;
 
     console.log('[Blind-Sight] Signup page detected, auto-scanning...');
-    attachAgreementListeners();
 
     try {
         const result = await performScan();
