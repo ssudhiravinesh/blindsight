@@ -1,6 +1,8 @@
 import type { ScanResult, SeverityKey } from './types';
+import type { ApiProvider } from './storage';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const SYNDICATE_SERVER_URL = 'https://blindsight-production.up.railway.app/api/v1/analyze';
 const SYNDICATE_API_KEY = 'blindsight_key_1';
@@ -161,44 +163,78 @@ function parseResponse(responseText: string): ScanResult {
     }
 }
 
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 export async function analyzeTOSviaServer(tosText: string, sourceUrl?: string): Promise<ScanResult> {
     if (!tosText || tosText.trim().length === 0) throw new Error('No ToS text provided');
 
     const text = truncateText(tosText.trim());
+    const MAX_RETRIES = 2;
+    const TIMEOUT_MS = 45000; // 45s to handle Railway cold starts + LLM response time
 
-    try {
-        const response = await fetch(SYNDICATE_SERVER_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': SYNDICATE_API_KEY,
-            },
-            body: JSON.stringify({
-                tos_text: text,
-                source_url: sourceUrl ?? '',
-            }),
-        });
+    const fetchOptions: RequestInit = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': SYNDICATE_API_KEY,
+        },
+        body: JSON.stringify({
+            tos_text: text,
+            source_url: sourceUrl ?? '',
+        }),
+    };
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const response = await fetchWithTimeout(SYNDICATE_SERVER_URL, fetchOptions, TIMEOUT_MS);
 
-            if (response.status === 401 || response.status === 403) throw new Error('Syndicate server authentication failed.');
-            if (response.status === 429) throw new Error('Syndicate server rate limit exceeded. Please wait and try again.');
-            if (response.status >= 500) throw new Error(`Syndicate server error (${response.status}). Please try again later.`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
 
-            const errMsg = (errorData as Record<string, string>)?.detail;
-            throw new Error(errMsg ?? `Syndicate server request failed with status ${response.status}`);
+                if (response.status === 401 || response.status === 403) throw new Error('Syndicate server authentication failed.');
+                if (response.status === 429) throw new Error('Syndicate server rate limit exceeded. Please wait and try again.');
+                if (response.status >= 500) {
+                    // Retry on 5xx (Railway cold start may cause these)
+                    if (attempt < MAX_RETRIES) {
+                        console.warn(`[Blind-Sight] Server returned ${response.status}, retrying (${attempt}/${MAX_RETRIES})...`);
+                        await new Promise(r => setTimeout(r, 3000));
+                        continue;
+                    }
+                    throw new Error(`Syndicate server error (${response.status}). Please try again later.`);
+                }
+
+                const errMsg = (errorData as Record<string, string>)?.detail;
+                throw new Error(errMsg ?? `Syndicate server request failed with status ${response.status}`);
+            }
+
+            const data = await response.json() as Record<string, unknown>;
+            return parseResponse(JSON.stringify(data));
+        } catch (error) {
+            const msg = (error as Error).message;
+            // Don't retry on auth/rate-limit errors
+            if (msg.includes('Syndicate server authentication') || msg.includes('rate limit')) throw error;
+
+            if (attempt < MAX_RETRIES) {
+                console.warn(`[Blind-Sight] Server request failed (attempt ${attempt}/${MAX_RETRIES}): ${msg}. Retrying...`);
+                await new Promise(r => setTimeout(r, 3000));
+                continue;
+            }
+
+            if (msg.includes('Syndicate server')) throw error;
+            console.error('Syndicate server error:', error);
+            throw new Error(`Syndicate server unavailable: ${msg}`);
         }
-
-        const data = await response.json() as Record<string, unknown>;
-
-        return parseResponse(JSON.stringify(data));
-    } catch (error) {
-        const msg = (error as Error).message;
-        if (msg.includes('Syndicate server')) throw error;
-        console.error('Syndicate server error:', error);
-        throw new Error(`Syndicate server unavailable: ${msg}`);
     }
+
+    throw new Error('Syndicate server unavailable: all retries exhausted');
 }
 
 export async function analyzeTOS(apiKey: string, tosText: string): Promise<ScanResult> {
@@ -271,4 +307,76 @@ export function getSeverityInfo(severity: SeverityKey): SeverityInfo {
         3: { name: 'Critical', color: '#ef4444', icon: '🚨', badge: 'danger' },
     };
     return levels[severity] ?? levels[0];
+}
+
+async function analyzeTOSviaGemini(apiKey: string, tosText: string): Promise<ScanResult> {
+    if (!apiKey) throw new Error('Gemini API key is required');
+    if (!tosText || tosText.trim().length === 0) throw new Error('No ToS text provided');
+
+    const text = truncateText(tosText.trim());
+
+    const requestBody = {
+        systemInstruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
+        },
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    {
+                        text: `Analyze the following Terms of Service text and classify by severity tier:\n\n---\n${text}\n---`,
+                    },
+                ],
+            },
+        ],
+        generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 2048,
+            responseMimeType: 'application/json',
+        },
+    };
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+            if (response.status === 400) throw new Error('Invalid Gemini API key or request. Check your key in Settings.');
+            if (response.status === 403) throw new Error('Gemini API key lacks permission. Check your API key.');
+            if (response.status === 429) throw new Error('Gemini rate limit exceeded. Please wait a moment and try again.');
+            if (response.status >= 500) throw new Error(`Gemini server error (${response.status}). Please try again.`);
+
+            const errMsg = (errorData.error as Record<string, string>)?.message;
+            throw new Error(errMsg ?? `Gemini API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json() as {
+            candidates?: { content?: { parts?: { text?: string }[] } }[];
+        };
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!responseText) throw new Error('Empty response from Gemini API');
+        return parseResponse(responseText);
+    } catch (error) {
+        const msg = (error as Error).message;
+        if (msg.includes('API key') || msg.includes('Rate limit') || msg.includes('permission')) throw error;
+        console.error('Gemini API error:', error);
+        throw new Error(`Failed to analyze ToS via Gemini: ${msg}`);
+    }
+}
+
+export async function analyzeTOSWithUserKey(
+    apiKey: string,
+    provider: ApiProvider,
+    tosText: string,
+): Promise<ScanResult> {
+    if (provider === 'gemini') {
+        return analyzeTOSviaGemini(apiKey, tosText);
+    }
+    return analyzeTOS(apiKey, tosText);
 }

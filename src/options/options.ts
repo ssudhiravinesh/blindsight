@@ -13,20 +13,29 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-function updateModeIndicator(hasKey: boolean) {
+function updateModeIndicator(hasKey: boolean, provider?: string) {
     if (hasKey) {
         modeIndicator.className = 'mode-indicator byok';
-        modeText.textContent = 'Using: Your API Key';
+        modeText.textContent = `Using: Your ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} Key`;
     } else {
         modeIndicator.className = 'mode-indicator server';
         modeText.textContent = 'Using: Blind-Sight Server';
     }
 }
 
-chrome.storage.local.get(['openaiApiKey'], (result) => {
-    if (result.openaiApiKey) {
+function detectProvider(key: string): 'openai' | 'gemini' | null {
+    if (key.startsWith('sk-')) return 'openai';
+    if (key.startsWith('AIza')) return 'gemini';
+    return null;
+}
+
+chrome.storage.local.get(['openaiApiKey', 'geminiApiKey'], (result) => {
+    if (result.geminiApiKey) {
+        apiKeyInput.value = result.geminiApiKey;
+        updateModeIndicator(true, 'gemini');
+    } else if (result.openaiApiKey) {
         apiKeyInput.value = result.openaiApiKey;
-        updateModeIndicator(true);
+        updateModeIndicator(true, 'openai');
     } else {
         updateModeIndicator(false);
     }
@@ -38,18 +47,24 @@ saveBtn.addEventListener('click', () => {
         showToast('Please enter an API key', 'error');
         return;
     }
-    if (!key.startsWith('sk-')) {
-        showToast('Invalid key format. Should start with "sk-"', 'error');
+    const provider = detectProvider(key);
+    if (!provider) {
+        showToast('Invalid key format. Should start with "sk-" (OpenAI) or "AIza" (Gemini)', 'error');
         return;
     }
-    chrome.storage.local.set({ openaiApiKey: key }, () => {
-        showToast('✅ API key saved! Scans will now use your key.');
-        updateModeIndicator(true);
+    const storageKey = provider === 'gemini' ? 'geminiApiKey' : 'openaiApiKey';
+    const otherKey = provider === 'gemini' ? 'openaiApiKey' : 'geminiApiKey';
+    chrome.storage.local.remove(otherKey, () => {
+        chrome.storage.local.set({ [storageKey]: key }, () => {
+            const label = provider === 'gemini' ? 'Gemini' : 'OpenAI';
+            showToast(`✅ ${label} API key saved! Scans will now use your key.`);
+            updateModeIndicator(true, provider);
+        });
     });
 });
 
 clearBtn.addEventListener('click', () => {
-    chrome.storage.local.remove('openaiApiKey', () => {
+    chrome.storage.local.remove(['openaiApiKey', 'geminiApiKey'], () => {
         apiKeyInput.value = '';
         showToast('🗑 API key removed. Using Blind-Sight server.');
         updateModeIndicator(false);

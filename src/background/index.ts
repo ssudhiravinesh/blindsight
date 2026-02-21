@@ -1,4 +1,4 @@
-import { analyzeTOS, analyzeTOSviaServer } from '../lib/openai';
+import { analyzeTOSWithUserKey, analyzeTOSviaServer } from '../lib/openai';
 import { getApiKey } from '../lib/storage';
 import type { HistoryEntry, ScanResult, SeverityKey } from '../lib/types';
 
@@ -126,19 +126,19 @@ async function handleAnalyzeTOS(
         }
 
         if (!result) {
-            const apiKey = await getApiKey();
-            if (apiKey) {
+            const apiKeyInfo = await getApiKey();
+            if (apiKeyInfo) {
                 try {
-                    result = await analyzeTOS(apiKey, tosText);
+                    result = await analyzeTOSWithUserKey(apiKeyInfo.key, apiKeyInfo.provider, tosText);
                 } catch (error) {
-                    const openaiError = (error as Error).message;
-                    console.error('[Blind-Sight BG] OpenAI fallback also failed:', openaiError);
+                    const fallbackError = (error as Error).message;
+                    console.error('[Blind-Sight BG] API key fallback also failed:', fallbackError);
                     setBadge('error', tabId);
-                    return { error: `Analysis server unavailable and OpenAI fallback failed: ${openaiError}` };
+                    return { error: `Analysis server unavailable and API fallback failed: ${fallbackError}` };
                 }
             } else {
                 setBadge('error', tabId);
-                return { error: 'Analysis server unavailable and no OpenAI API key configured.' };
+                return { error: 'Analysis server unavailable and no API key configured.' };
             }
         }
 

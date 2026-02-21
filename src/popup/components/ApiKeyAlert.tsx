@@ -6,7 +6,7 @@ export default function ApiKeyAlert() {
                 <div className="flex-1">
                     <h3 className="font-bold text-sm text-bs-warning mb-1">API Key Required</h3>
                     <p className="text-xs text-bs-text-secondary mb-2">
-                        Add your OpenAI API key in Settings to start analyzing Terms of Service.
+                        Add your OpenAI or Gemini API key in Settings to start analyzing Terms of Service.
                     </p>
                     <button
                         onClick={() => chrome.runtime.openOptionsPage()}
