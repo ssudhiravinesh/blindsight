@@ -148,22 +148,28 @@ async function handleAnalyzeTOS(request, sender) {
 
         let result;
         const sourceUrl = sender.tab?.url || null;
+        const apiKey = await getApiKey();
 
-        // Strategy: try Syndicate Server first, fall back to OpenAI BYOK
-        try {
-            result = await analyzeTOSviaServer(tosText, sourceUrl);
-            console.log('[Blind-Sight BG] Analysis via Syndicate Server succeeded.');
-        } catch (serverError) {
-            console.warn('[Blind-Sight BG] Syndicate Server failed, trying OpenAI fallback:', serverError.message);
-
-            const apiKey = await getApiKey();
-            if (!apiKey) {
-                // No fallback available — surface server error
-                throw new Error('Analysis server unavailable and no OpenAI API key configured. Please try again later or add an API key in Settings.');
+        if (apiKey) {
+            // User has a BYOK key — use it as primary
+            try {
+                result = await analyzeTOS(apiKey, tosText);
+                console.log('[Blind-Sight BG] Analysis via user API key succeeded.');
+            } catch (keyError) {
+                console.warn('[Blind-Sight BG] User API key failed:', keyError.message);
+                // Do NOT silently fall back to our paid server.
+                // Surface the error so the user knows their key failed.
+                throw new Error(`Your API key failed: ${keyError.message}. You can remove your key in Settings to use Blind-Sight's built-in server instead.`);
             }
-
-            result = await analyzeTOS(apiKey, tosText);
-            console.log('[Blind-Sight BG] Analysis via OpenAI fallback succeeded.');
+        } else {
+            // No user key — use Syndicate Server (default, free for user)
+            try {
+                result = await analyzeTOSviaServer(tosText, sourceUrl);
+                console.log('[Blind-Sight BG] Analysis via Syndicate Server succeeded.');
+            } catch (serverError) {
+                console.error('[Blind-Sight BG] Syndicate Server failed:', serverError.message);
+                throw new Error('Analysis server is temporarily unavailable. Please try again later, or add your own OpenAI API key in Settings.');
+            }
         }
 
         const severity = result.overallSeverity || 0;

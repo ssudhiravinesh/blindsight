@@ -1,7 +1,10 @@
 const apiKeyInput = document.getElementById('apiKeyInput') as HTMLInputElement;
 const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+const clearBtn = document.getElementById('clearBtn') as HTMLButtonElement;
 const toggleBtn = document.getElementById('toggleBtn') as HTMLButtonElement;
 const toast = document.getElementById('toast') as HTMLDivElement;
+const modeIndicator = document.getElementById('modeIndicator') as HTMLDivElement;
+const modeText = document.getElementById('modeText') as HTMLSpanElement;
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
     toast.textContent = message;
@@ -10,10 +13,23 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-// Load existing key
+function updateModeIndicator(hasKey: boolean) {
+    if (hasKey) {
+        modeIndicator.className = 'mode-indicator byok';
+        modeText.textContent = 'Using: Your API Key';
+    } else {
+        modeIndicator.className = 'mode-indicator server';
+        modeText.textContent = 'Using: Blind-Sight Server';
+    }
+}
+
+// Load existing key and set mode
 chrome.storage.local.get(['openaiApiKey'], (result) => {
     if (result.openaiApiKey) {
         apiKeyInput.value = result.openaiApiKey;
+        updateModeIndicator(true);
+    } else {
+        updateModeIndicator(false);
     }
 });
 
@@ -29,7 +45,17 @@ saveBtn.addEventListener('click', () => {
         return;
     }
     chrome.storage.local.set({ openaiApiKey: key }, () => {
-        showToast('✅ API key saved successfully!');
+        showToast('✅ API key saved! Scans will now use your key.');
+        updateModeIndicator(true);
+    });
+});
+
+// Clear
+clearBtn.addEventListener('click', () => {
+    chrome.storage.local.remove('openaiApiKey', () => {
+        apiKeyInput.value = '';
+        showToast('🗑 API key removed. Using Blind-Sight server.');
+        updateModeIndicator(false);
     });
 });
 

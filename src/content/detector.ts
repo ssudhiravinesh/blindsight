@@ -3,7 +3,8 @@ import type { SignupDetection } from '../lib/types';
 // ─── Keywords ───────────────────────────────────────────
 const SIGNUP_BUTTON_KEYWORDS = [
     'sign up', 'signup', 'register', 'create account', 'create an account',
-    'join', 'join now', 'get started', 'start free', 'try free', 'sign in',
+    'join', 'join now', 'get started', 'start free', 'try free',
+    'sign in', 'signin', 'log in', 'login', 'next', 'continue',
 ];
 
 const TERMS_CHECKBOX_KEYWORDS = [
@@ -32,8 +33,13 @@ function findEmailFields(): HTMLInputElement[] {
         const id = (input.id ?? '').toLowerCase();
         const placeholder = (input.placeholder ?? '').toLowerCase();
         const autocomplete = (input.autocomplete ?? '').toLowerCase();
+        const ariaLabel = (input.getAttribute('aria-label') ?? '').toLowerCase();
 
-        if (name.includes('email') || id.includes('email') || placeholder.includes('email') || autocomplete.includes('email')) {
+        const isIdentity = ['email', 'user', 'login', 'identifier', 'phone'].some(k =>
+            name.includes(k) || id.includes(k) || placeholder.includes(k) || autocomplete.includes(k) || ariaLabel.includes(k)
+        );
+
+        if (isIdentity) {
             fields.push(input);
         }
     }
@@ -77,8 +83,8 @@ function hasSignupForm(): boolean {
     for (const form of document.querySelectorAll('form')) {
         const action = (form.action ?? '').toLowerCase();
         const html = form.innerHTML.toLowerCase();
-        if (['signup', 'register', 'create', 'join'].some((k) => action.includes(k))) return true;
-        if (['create account', 'sign up', 'register'].some((k) => html.includes(k))) return true;
+        if (['signup', 'register', 'create', 'join', 'login', 'signin', 'auth'].some((k) => action.includes(k))) return true;
+        if (['create account', 'sign up', 'register', 'log in', 'sign in', 'next', 'continue'].some((k) => html.includes(k))) return true;
     }
     return false;
 }
@@ -104,10 +110,10 @@ export function getSignupConfidence(): { score: number; indicators: string[]; de
     const pageTitle = document.title.toLowerCase();
     const pageUrl = window.location.href.toLowerCase();
 
-    if (['sign up', 'register', 'create account', 'join'].some((k) => pageTitle.includes(k))) {
+    if (['sign up', 'signup', 'register', 'create', 'join', 'login', 'signin', 'log in', 'sign in'].some((k) => pageTitle.includes(k))) {
         score += 20; indicators.push('title_match');
     }
-    if (['signup', 'register', 'join', 'create'].some((k) => pageUrl.includes(k))) {
+    if (['signup', 'register', 'join', 'create', 'login', 'signin', 'auth'].some((k) => pageUrl.includes(k))) {
         score += 20; indicators.push('url_match');
     }
 
@@ -124,11 +130,11 @@ export function getSignupConfidence(): { score: number; indicators: string[]; de
     };
 }
 
-export function isSignupPage(threshold = 50): boolean {
+export function isSignupPage(threshold = 35): boolean {
     return getSignupConfidence().score >= threshold;
 }
 
-export function getSignupDetectionResult(threshold = 50): SignupDetection {
+export function getSignupDetectionResult(threshold = 35): SignupDetection {
     const result = getSignupConfidence();
     return { isSignup: result.score >= threshold, ...result };
 }

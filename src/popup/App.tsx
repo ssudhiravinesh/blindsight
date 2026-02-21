@@ -4,12 +4,10 @@ import StatusIndicator from './components/StatusIndicator';
 import ScanButton from './components/ScanButton';
 import ResultCard from './components/ResultCard';
 import HistorySection from './components/HistorySection';
-import ApiKeyAlert from './components/ApiKeyAlert';
-import { hasApiKey } from '../lib/storage';
 import type { ScanResponse, ScanResult, HistoryEntry, SeverityKey } from '../lib/types';
 import { isScanError, SEVERITY_CONFIG } from '../lib/types';
 
-type Status = 'idle' | 'scanning' | 'safe' | 'notable' | 'caution' | 'danger' | 'error' | 'nokey';
+type Status = 'idle' | 'scanning' | 'safe' | 'notable' | 'caution' | 'danger' | 'error';
 
 function sendToContentScript(message: Record<string, unknown>): Promise<ScanResponse> {
     return new Promise((resolve, reject) => {
@@ -43,18 +41,10 @@ export default function App() {
     const [result, setResult] = useState<ScanResult | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
-    const [showApiAlert, setShowApiAlert] = useState(false);
 
     // ─── Init ───────────────────────────────────────────
     useEffect(() => {
         (async () => {
-            const hasKey = await hasApiKey();
-            if (!hasKey) {
-                setStatus('nokey');
-                setStatusMessage('API key needed');
-                setShowApiAlert(true);
-            }
-
             const h = await loadHistory();
             setHistory(h);
         })();
@@ -62,20 +52,11 @@ export default function App() {
 
     // ─── Scan handler ───────────────────────────────────
     const handleScan = useCallback(async () => {
-        const hasKey = await hasApiKey();
-        if (!hasKey) {
-            setShowApiAlert(true);
-            setStatus('nokey');
-            setStatusMessage('Setup required');
-            return;
-        }
-
         setStatus('scanning');
         setStatusMessage('Analyzing Terms of Service...');
         setScanning(true);
         setResult(null);
         setErrorMessage(null);
-        setShowApiAlert(false);
 
         try {
             const response = await sendToContentScript({ type: 'MANUAL_SCAN' });
@@ -123,7 +104,7 @@ export default function App() {
             <div className="flex-1 p-4 flex flex-col gap-4">
                 <StatusIndicator status={status} message={statusMessage} />
 
-                {showApiAlert && <ApiKeyAlert />}
+
 
                 <ScanButton onClick={handleScan} scanning={scanning} disabled={scanning} />
 

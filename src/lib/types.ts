@@ -102,7 +102,50 @@ export type ServiceCategory =
     | 'notes'
     | 'ai_assistant'
     | 'file_sharing'
+    | 'streaming_video'
+    | 'streaming_music'
+    | 'ecommerce'
+    | 'maps_navigation'
+    | 'fitness_health'
+    | 'food_delivery'
+    | 'ride_sharing'
+    | 'gaming'
+    | 'dating'
+    | 'finance_banking'
+    | 'education'
+    | 'dns'
+    | 'photo_editing'
+    | 'office_suite'
+    | 'code_hosting'
+    | 'news_media'
+    | 'calendar'
+    | 'productivity'
+    | 'operating_system'
+    | 'mobile_os'
+    | 'domain_registrar'
+    | 'web_hosting'
+    | 'analytics'
+    | 'translation'
+    | 'video_sharing'
+    | 'two_factor_auth'
+    | 'podcast'
+    | 'rss_reader'
+    | 'design_tools'
+    | 'crm'
+    | 'project_management'
+    | 'forms_surveys'
+    | 'link_shortener'
+    | 'digital_payments'
+    | 'remote_access'
+    | 'photo_storage'
+    | 'forum'
     | 'unknown';
+
+export interface AISuggestedAlternative {
+    name: string;
+    url: string;
+    reason: string;
+}
 
 export interface ScanResult {
     overallSeverity: SeverityKey;
@@ -114,6 +157,7 @@ export interface ScanResult {
     lethal?: boolean;
     parseError?: boolean;
     rawResponse?: string;
+    aiAlternatives?: AISuggestedAlternative[];
 }
 
 export interface ScanError {

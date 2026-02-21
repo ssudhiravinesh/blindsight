@@ -34,7 +34,7 @@ async function getHistory(): Promise<HistoryEntry[]> {
 }
 
 // ─── Badge ──────────────────────────────────────────────
-type BadgeStatus = 'safe' | 'notable' | 'caution' | 'danger' | 'scanning' | 'warning' | 'notos' | 'error' | 'clear';
+type BadgeStatus = 'safe' | 'notable' | 'caution' | 'danger' | 'scanning' | 'warning' | 'prompt' | 'notos' | 'error' | 'clear';
 
 function setBadge(status: BadgeStatus, tabId?: number): void {
     const config: Record<BadgeStatus, { text: string; color: string }> = {
@@ -44,6 +44,7 @@ function setBadge(status: BadgeStatus, tabId?: number): void {
         danger: { text: '!', color: '#ef4444' },
         scanning: { text: '...', color: '#6366f1' },
         warning: { text: '?', color: '#f59e0b' },
+        prompt: { text: '?', color: '#6366f1' },
         notos: { text: '—', color: '#9ca3af' },
         error: { text: '✕', color: '#ef4444' },
         clear: { text: '', color: '#6366f1' },

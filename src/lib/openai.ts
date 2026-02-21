@@ -58,13 +58,18 @@ Truly predatory/aggressive terms - RARE, reserve for egregious cases:
 
 ## SERVICE CATEGORIES (for alternative suggestions):
 Identify what type of service this ToS belongs to. Choose ONE from:
-- vpn, email, cloud_storage, social_media, messaging, video_conferencing, search, browser, password_manager, notes, ai_assistant, file_sharing, unknown
+- vpn, email, cloud_storage, social_media, messaging, video_conferencing, search, browser, password_manager, notes, ai_assistant, file_sharing
+- streaming_video, streaming_music, ecommerce, maps_navigation, fitness_health, food_delivery, ride_sharing, gaming, dating
+- finance_banking, education, dns, photo_editing, office_suite, code_hosting, news_media, calendar, productivity
+- operating_system, mobile_os, domain_registrar, web_hosting, analytics, translation, video_sharing, two_factor_auth
+- podcast, rss_reader, design_tools, crm, project_management, forms_surveys, link_shortener, digital_payments, remote_access, photo_storage, forum
+- unknown (ONLY if none of the above fit)
 
 ## RESPONSE FORMAT:
 Respond ONLY with valid JSON:
 {
   "overallSeverity": 0-3,
-  "category": "vpn|email|cloud_storage|social_media|messaging|video_conferencing|search|browser|password_manager|notes|ai_assistant|file_sharing|unknown",
+  "category": "<one of the categories listed above>",
   "serviceName": "Name of the service (e.g., TurboVPN, Gmail)",
   "summary": "Brief 1-sentence summary of the ToS",
   "clauses": [
@@ -75,8 +80,20 @@ Respond ONLY with valid JSON:
       "explanation": "human-readable explanation",
       "mitigation": "any opt-out or protection available, or null"
     }
+  ],
+  "suggestedAlternatives": [
+    {
+      "name": "Alternative Service Name",
+      "url": "https://alternative-url.com",
+      "reason": "Why this alternative is more privacy-friendly"
+    }
   ]
 }
+
+NOTE ON suggestedAlternatives:
+- ONLY include this field when category is "unknown" AND overallSeverity >= 2
+- Suggest 2-3 privacy-respecting alternatives specific to the type of service analyzed
+- Omit this field entirely for known categories (we have our own curated database)
 
 If terms are standard with no concerns: {"overallSeverity": 0, "category": "...", "serviceName": "...", "summary": "Standard terms...", "clauses": []}`;
 
@@ -114,6 +131,16 @@ function parseResponse(responseText: string): ScanResult {
             mitigation: (clause.mitigation as string | null) ?? null,
         }));
 
+        // Parse AI-suggested alternatives (only present for unknown categories)
+        const rawAiAlts = Array.isArray(parsed.suggestedAlternatives) ? parsed.suggestedAlternatives : [];
+        const aiAlternatives = rawAiAlts
+            .filter((a: Record<string, unknown>) => a.name && a.url && a.reason)
+            .map((a: Record<string, unknown>) => ({
+                name: a.name as string,
+                url: a.url as string,
+                reason: a.reason as string,
+            }));
+
         return {
             overallSeverity,
             category: (parsed.category as string) ?? 'unknown',
@@ -121,6 +148,7 @@ function parseResponse(responseText: string): ScanResult {
             summary: parsed.summary as string | undefined,
             clauses,
             lethal: overallSeverity >= 3,
+            ...(aiAlternatives.length > 0 ? { aiAlternatives } : {}),
         } as ScanResult;
     } catch (error) {
         console.error('Failed to parse OpenAI response:', error);

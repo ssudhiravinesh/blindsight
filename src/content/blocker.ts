@@ -1,9 +1,10 @@
-import type { Clause, SeverityKey } from '../lib/types';
+import type { Clause, SeverityKey, ScanResult, AISuggestedAlternative } from '../lib/types';
 import { getAlternatives } from '../lib/alternatives';
 
 // ─── Constants ──────────────────────────────────────────
 const OVERLAY_ID = 'blind-sight-overlay';
 const MODAL_ID = 'blind-sight-modal';
+const PROMPT_BANNER_ID = 'blind-sight-prompt-banner';
 const ORANGE_COUNTDOWN_SECONDS = 5;
 const CONFIRMATION_PHRASE = 'I PROCEED';
 const BLOCKED_ATTR = 'data-blind-sight-blocked';
@@ -113,6 +114,56 @@ function injectStyles(): void {
     .bs-alt-reason{font-size:12px;color:#94a3b8;line-height:1.4}
     .bs-alt-arrow{color:#10b981;font-size:16px;flex-shrink:0;opacity:0.6;transition:opacity 0.2s,transform 0.2s}
     .bs-alt-card:hover .bs-alt-arrow{opacity:1;transform:translateX(2px)}
+    #${PROMPT_BANNER_ID}{position:fixed;top:0;left:0;right:0;z-index:2147483645;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;animation:bs-banner-slide-in 0.4s cubic-bezier(0.16,1,0.3,1)}
+    @keyframes bs-banner-slide-in{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes bs-banner-slide-out{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
+    .bs-prompt-inner{display:flex;align-items:center;gap:14px;padding:14px 20px;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-bottom:1px solid rgba(99,102,241,0.3);box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+    .bs-prompt-icon{font-size:22px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(99,102,241,0.4))}
+    .bs-prompt-text{flex:1;min-width:0}
+    .bs-prompt-title{font-size:14px;font-weight:700;color:#e2e8f0;margin:0 0 2px}
+    .bs-prompt-subtitle{font-size:12px;color:#94a3b8;margin:0}
+    .bs-prompt-actions{display:flex;gap:8px;flex-shrink:0}
+    .bs-prompt-scan-btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;transition:all 0.2s;box-shadow:0 2px 8px rgba(99,102,241,0.3)}
+    .bs-prompt-scan-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.5)}
+    .bs-prompt-dismiss-btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s}
+    .bs-prompt-dismiss-btn:hover{background:rgba(255,255,255,0.12);color:#e2e8f0}
+    #bs-result-card{position:fixed;top:16px;right:16px;z-index:2147483645;width:360px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;animation:bs-result-fade-in 0.4s cubic-bezier(0.16,1,0.3,1)}
+    @keyframes bs-result-fade-in{from{transform:translateY(-12px) scale(0.96);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+    @keyframes bs-result-fade-out{from{transform:translateY(0) scale(1);opacity:1}to{transform:translateY(-12px) scale(0.96);opacity:0}}
+    .bs-result-inner{border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.06)}
+    .bs-result-header{padding:16px 18px;display:flex;align-items:center;gap:12px}
+    .bs-result-header.safe{background:linear-gradient(135deg,#0a2e1a,#1a1a2e)}
+    .bs-result-header.notable{background:linear-gradient(135deg,#2e2a0a,#1a1a2e)}
+    .bs-result-header.caution{background:linear-gradient(135deg,#2e1a0a,#1a1a2e)}
+    .bs-result-header.danger{background:linear-gradient(135deg,#2e0a0a,#1a1a2e)}
+    .bs-result-header.error{background:linear-gradient(135deg,#2e0a0a,#1a1a2e)}
+    .bs-result-header.scanning{background:linear-gradient(135deg,#0a1a2e,#1a1a2e)}
+    #bs-scanning-banner{position:fixed;top:0;left:0;right:0;z-index:2147483645;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;animation:bs-banner-slide-in 0.4s cubic-bezier(0.16,1,0.3,1)}
+    .bs-scanning-inner{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-bottom:1px solid rgba(99,102,241,0.3);box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+    .bs-scanning-spinner{width:20px;height:20px;border:2.5px solid rgba(99,102,241,0.2);border-top-color:#818cf8;border-radius:50%;animation:bs-spin 0.8s linear infinite}
+    @keyframes bs-spin{to{transform:rotate(360deg)}}
+    .bs-scanning-text{font-size:13px;font-weight:600;color:#e2e8f0}
+    .bs-scanning-sub{font-size:11px;color:#94a3b8;margin-left:auto}
+    .bs-result-icon{font-size:28px;flex-shrink:0}
+    .bs-result-info{flex:1;min-width:0}
+    .bs-result-title{font-size:15px;font-weight:700;color:#fff;margin:0 0 2px}
+    .bs-result-msg{font-size:12px;color:#94a3b8;margin:0;line-height:1.4}
+    .bs-result-close{background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;padding:4px;line-height:1;transition:color 0.2s}
+    .bs-result-close:hover{color:#e2e8f0}
+    .bs-result-body{padding:12px 18px;background:#1a1a2e}
+    .bs-result-clauses{list-style:none;padding:0;margin:0}
+    .bs-result-clause{padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:6px;margin-bottom:4px;font-size:12px;color:#cbd5e1;line-height:1.4;border-left:2px solid}
+    .bs-result-clause.green{border-color:#22c55e}
+    .bs-result-clause.yellow{border-color:#eab308}
+    .bs-result-clause.orange{border-color:#f97316}
+    .bs-result-clause.red{border-color:#ef4444}
+    .bs-result-footer{padding:10px 18px;background:#151525;text-align:center}
+    .bs-result-footer p{font-size:10px;color:#64748b;margin:0}
+    .bs-result-grade{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;font-size:18px;font-weight:800;flex-shrink:0}
+    .bs-result-grade.safe{background:rgba(34,197,94,0.15);color:#22c55e}
+    .bs-result-grade.notable{background:rgba(234,179,8,0.15);color:#eab308}
+    .bs-result-grade.caution{background:rgba(249,115,22,0.15);color:#f97316}
+    .bs-result-grade.danger{background:rgba(239,68,68,0.15);color:#ef4444}
   `;
     document.head.appendChild(styles);
 }
@@ -124,28 +175,51 @@ function createClausesHTML(clauses: Clause[], severityClass: 'orange' | 'red'): 
         .join('');
 }
 
-function createAlternativesHTML(category?: string): string {
-    if (!category) return '';
-    const alts = getAlternatives(category);
-    if (!alts.alternatives.length) return '';
+function createAlternativesHTML(category?: string, hostname?: string, aiAlternatives?: AISuggestedAlternative[]): string {
+    // 1. Try static curated alternatives
+    if (category) {
+        const alts = getAlternatives(category, hostname);
+        if (alts.displayName !== 'Online Service' && alts.alternatives.length) {
+            return `
+            <div class="bs-alt-section">
+              <div class="bs-alt-title">🛡️ Safer ${alts.displayName} Alternatives</div>
+              ${alts.alternatives.slice(0, 3).map((alt) => `
+                <a href="${alt.url}" target="_blank" rel="noopener noreferrer" class="bs-alt-card">
+                  <span class="bs-alt-icon">${alt.icon}</span>
+                  <div class="bs-alt-info">
+                    <div class="bs-alt-name">${alt.name}</div>
+                    <div class="bs-alt-reason">${alt.reason}</div>
+                  </div>
+                  <span class="bs-alt-arrow">→</span>
+                </a>
+              `).join('')}
+            </div>`;
+        }
+    }
 
-    return `
-    <div class="bs-alt-section">
-      <div class="bs-alt-title">🛡️ Safer ${alts.displayName} Alternatives</div>
-      ${alts.alternatives.slice(0, 3).map((alt) => `
-        <a href="${alt.url}" target="_blank" rel="noopener noreferrer" class="bs-alt-card">
-          <span class="bs-alt-icon">${alt.icon}</span>
-          <div class="bs-alt-info">
-            <div class="bs-alt-name">${alt.name}</div>
-            <div class="bs-alt-reason">${alt.reason}</div>
-          </div>
-          <span class="bs-alt-arrow">→</span>
-        </a>
-      `).join('')}
-    </div>`;
+    // 2. Fallback to AI-suggested alternatives
+    if (aiAlternatives && aiAlternatives.length > 0) {
+        return `
+        <div class="bs-alt-section">
+          <div class="bs-alt-title">🤖 AI-Suggested Alternatives</div>
+          ${aiAlternatives.slice(0, 3).map((alt) => `
+            <a href="${alt.url}" target="_blank" rel="noopener noreferrer" class="bs-alt-card">
+              <span class="bs-alt-icon">🔗</span>
+              <div class="bs-alt-info">
+                <div class="bs-alt-name">${alt.name}</div>
+                <div class="bs-alt-reason">${alt.reason}</div>
+              </div>
+              <span class="bs-alt-arrow">→</span>
+            </a>
+          `).join('')}
+          <div style="font-size:10px;color:#64748b;text-align:center;margin-top:6px;">AI-suggested — verify before visiting</div>
+        </div>`;
+    }
+
+    return '';
 }
 
-function createOrangeModalHTML(clauses: Clause[], category?: string, serviceName?: string): string {
+function createOrangeModalHTML(clauses: Clause[], category?: string, serviceName?: string, hostname?: string, aiAlternatives?: AISuggestedAlternative[]): string {
     const name = serviceName ?? 'this service';
     return `
     <div id="${OVERLAY_ID}">
@@ -156,7 +230,7 @@ function createOrangeModalHTML(clauses: Clause[], category?: string, serviceName
         </div>
         <div class="bs-modal-body">
           <ul class="bs-clause-list">${createClausesHTML(clauses, 'orange')}</ul>
-          ${createAlternativesHTML(category)}
+          ${createAlternativesHTML(category, hostname, aiAlternatives)}
         </div>
         <div class="bs-modal-footer">
           <button id="blind-sight-abort-btn" class="bs-btn bs-btn-abort">✕ Leave This Page</button>
@@ -166,7 +240,7 @@ function createOrangeModalHTML(clauses: Clause[], category?: string, serviceName
     </div>`;
 }
 
-function createRedModalHTML(clauses: Clause[], category?: string, serviceName?: string): string {
+function createRedModalHTML(clauses: Clause[], category?: string, serviceName?: string, hostname?: string, aiAlternatives?: AISuggestedAlternative[]): string {
     const name = serviceName ?? 'this service';
     return `
     <div id="${OVERLAY_ID}">
@@ -177,7 +251,7 @@ function createRedModalHTML(clauses: Clause[], category?: string, serviceName?: 
         </div>
         <div class="bs-modal-body">
           <ul class="bs-clause-list">${createClausesHTML(clauses, 'red')}</ul>
-          ${createAlternativesHTML(category)}
+          ${createAlternativesHTML(category, hostname, aiAlternatives)}
           <div class="bs-confirm-label">Type <strong>"I PROCEED"</strong> to unlock</div>
           <input id="blind-sight-confirm-input" class="bs-confirm-input" type="text" placeholder="Type here..." autocomplete="off" />
         </div>
@@ -190,13 +264,13 @@ function createRedModalHTML(clauses: Clause[], category?: string, serviceName?: 
 }
 
 // ─── Modal lifecycle ────────────────────────────────────
-function showOrangeModal(clauses: Clause[], options: { category?: string; serviceName?: string } = {}): void {
+function showOrangeModal(clauses: Clause[], options: { category?: string; serviceName?: string; hostname?: string; aiAlternatives?: AISuggestedAlternative[] } = {}): void {
     injectStyles();
     hideWarningModal();
     blockButtons(2);
 
     const container = document.createElement('div');
-    container.innerHTML = createOrangeModalHTML(clauses, options.category, options.serviceName);
+    container.innerHTML = createOrangeModalHTML(clauses, options.category, options.serviceName, options.hostname, options.aiAlternatives);
     document.body.appendChild(container.firstElementChild!);
 
     let countdown = ORANGE_COUNTDOWN_SECONDS;
@@ -231,13 +305,13 @@ function showOrangeModal(clauses: Clause[], options: { category?: string; servic
     });
 }
 
-function showRedModal(clauses: Clause[], options: { category?: string; serviceName?: string } = {}): void {
+function showRedModal(clauses: Clause[], options: { category?: string; serviceName?: string; hostname?: string; aiAlternatives?: AISuggestedAlternative[] } = {}): void {
     injectStyles();
     hideWarningModal();
     blockButtons(3);
 
     const container = document.createElement('div');
-    container.innerHTML = createRedModalHTML(clauses, options.category, options.serviceName);
+    container.innerHTML = createRedModalHTML(clauses, options.category, options.serviceName, options.hostname, options.aiAlternatives);
     document.body.appendChild(container.firstElementChild!);
 
     const confirmInput = document.getElementById('blind-sight-confirm-input') as HTMLInputElement | null;
@@ -281,7 +355,7 @@ function showRedModal(clauses: Clause[], options: { category?: string; serviceNa
 export function showWarningModal(
     clauses: Clause[],
     severity: SeverityKey = 3,
-    options: { category?: string; serviceName?: string } = {},
+    options: { category?: string; serviceName?: string; hostname?: string; aiAlternatives?: AISuggestedAlternative[] } = {},
 ): void {
     if (severity >= 3) showRedModal(clauses, options);
     else if (severity >= 2) showOrangeModal(clauses, options);
@@ -313,6 +387,190 @@ export function attachAgreementListeners(): void {
             }
         });
     }
+}
+
+// ─── Pre-scan prompt banner ─────────────────────────────
+export function showPreScanPrompt(): Promise<boolean> {
+    return new Promise((resolve) => {
+        // Don't show if already visible
+        if (document.getElementById(PROMPT_BANNER_ID)) {
+            resolve(false);
+            return;
+        }
+
+        injectStyles();
+
+        const banner = document.createElement('div');
+        banner.id = PROMPT_BANNER_ID;
+        banner.innerHTML = `
+          <div class="bs-prompt-inner">
+            <span class="bs-prompt-icon">🛡️</span>
+            <div class="bs-prompt-text">
+              <p class="bs-prompt-title">Sign-up page detected</p>
+              <p class="bs-prompt-subtitle">Would you like Blind-Sight to scan the Terms of Service before you continue?</p>
+            </div>
+            <div class="bs-prompt-actions">
+              <button id="bs-prompt-scan" class="bs-prompt-scan-btn">Scan Terms</button>
+              <button id="bs-prompt-dismiss" class="bs-prompt-dismiss-btn">✕</button>
+            </div>
+          </div>`;
+
+        document.body.appendChild(banner);
+
+        const cleanup = (userWantsScan: boolean) => {
+            banner.style.animation = 'bs-banner-slide-out 0.3s ease forwards';
+            banner.addEventListener('animationend', () => banner.remove(), { once: true });
+            // Fallback in case animationend doesn't fire
+            setTimeout(() => banner.remove(), 400);
+            resolve(userWantsScan);
+        };
+
+        document.getElementById('bs-prompt-scan')?.addEventListener('click', () => cleanup(true));
+        document.getElementById('bs-prompt-dismiss')?.addEventListener('click', () => cleanup(false));
+    });
+}
+
+export function hidePreScanPrompt(): void {
+    const banner = document.getElementById(PROMPT_BANNER_ID);
+    if (banner) {
+        banner.style.animation = 'bs-banner-slide-out 0.3s ease forwards';
+        banner.addEventListener('animationend', () => banner.remove(), { once: true });
+        setTimeout(() => banner.remove(), 400);
+    }
+}
+
+// ─── In-page scan result card ───────────────────────────
+const RESULT_CARD_ID = 'bs-result-card';
+const RESULT_AUTO_DISMISS_MS = 8000;
+
+const RESULT_CONFIG: Record<SeverityKey, { icon: string; title: string; message: string; grade: string; cls: string }> = {
+    0: { icon: '✅', title: 'Terms Look Good', message: "Standard, industry-normal terms. You're good to go!", grade: 'A', cls: 'safe' },
+    1: { icon: '📝', title: 'Notable Terms', message: 'Some terms worth knowing about, but common practice.', grade: 'B', cls: 'notable' },
+    2: { icon: '⚠️', title: 'Proceed with Caution', message: 'Unusual terms detected. Review before accepting.', grade: 'C', cls: 'caution' },
+    3: { icon: '🚨', title: 'Critical Terms Detected', message: 'Aggressive terms found. Proceed at your own risk.', grade: 'F', cls: 'danger' },
+};
+
+function clauseSeverityClass(severity: SeverityKey): string {
+    return ({ 0: 'green', 1: 'yellow', 2: 'orange', 3: 'red' } as Record<SeverityKey, string>)[severity] ?? 'yellow';
+}
+
+export function showScanResultCard(result: ScanResult): void {
+    // Remove any existing card
+    document.getElementById(RESULT_CARD_ID)?.remove();
+    injectStyles();
+
+    const severity = (result.overallSeverity ?? 0) as SeverityKey;
+    const config = RESULT_CONFIG[severity];
+    const serviceName = result.serviceName ?? 'this service';
+    const clausesHTML = (result.clauses ?? []).slice(0, 4).map(c =>
+        `<li class="bs-result-clause ${clauseSeverityClass(c.severity)}">${c.explanation ?? c.quote ?? 'Concerning clause'}</li>`
+    ).join('');
+
+    const card = document.createElement('div');
+    card.id = RESULT_CARD_ID;
+    card.innerHTML = `
+      <div class="bs-result-inner">
+        <div class="bs-result-header ${config.cls}">
+          <span class="bs-result-icon">${config.icon}</span>
+          <div class="bs-result-info">
+            <p class="bs-result-title">${config.title}</p>
+            <p class="bs-result-msg">${serviceName} — ${config.message}</p>
+          </div>
+          <div class="bs-result-grade ${config.cls}">${config.grade}</div>
+          <button class="bs-result-close" id="bs-result-close">✕</button>
+        </div>
+        ${clausesHTML ? `<div class="bs-result-body"><ul class="bs-result-clauses">${clausesHTML}</ul></div>` : ''}
+        <div class="bs-result-footer"><p>Blind-Sight · Click to dismiss</p></div>
+      </div>`;
+
+    document.body.appendChild(card);
+
+    const dismiss = () => {
+        card.style.animation = 'bs-result-fade-out 0.3s ease forwards';
+        card.addEventListener('animationend', () => card.remove(), { once: true });
+        setTimeout(() => card.remove(), 400);
+    };
+
+    document.getElementById('bs-result-close')?.addEventListener('click', dismiss);
+    card.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.bs-result-clause')) return; // allow text selection on clauses
+        dismiss();
+    });
+
+    // Auto-dismiss after 8s
+    setTimeout(() => {
+        if (document.getElementById(RESULT_CARD_ID)) dismiss();
+    }, RESULT_AUTO_DISMISS_MS);
+}
+
+export function hideResultCard(): void {
+    const card = document.getElementById(RESULT_CARD_ID);
+    if (card) {
+        card.style.animation = 'bs-result-fade-out 0.3s ease forwards';
+        card.addEventListener('animationend', () => card.remove(), { once: true });
+        setTimeout(() => card.remove(), 400);
+    }
+}
+
+// ─── Scanning banner ────────────────────────────────────
+const SCANNING_BANNER_ID = 'bs-scanning-banner';
+
+export function showScanningBanner(): void {
+    document.getElementById(SCANNING_BANNER_ID)?.remove();
+    injectStyles();
+
+    const banner = document.createElement('div');
+    banner.id = SCANNING_BANNER_ID;
+    banner.innerHTML = `
+      <div class="bs-scanning-inner">
+        <div class="bs-scanning-spinner"></div>
+        <span class="bs-scanning-text">Analyzing Terms of Service...</span>
+        <span class="bs-scanning-sub">This may take a few seconds</span>
+      </div>`;
+
+    document.body.appendChild(banner);
+}
+
+export function hideScanningBanner(): void {
+    const banner = document.getElementById(SCANNING_BANNER_ID);
+    if (banner) {
+        banner.style.animation = 'bs-banner-slide-out 0.3s ease forwards';
+        banner.addEventListener('animationend', () => banner.remove(), { once: true });
+        setTimeout(() => banner.remove(), 400);
+    }
+}
+
+// ─── Scan error card ────────────────────────────────────
+export function showScanErrorCard(errorMessage: string): void {
+    document.getElementById(RESULT_CARD_ID)?.remove();
+    injectStyles();
+
+    const card = document.createElement('div');
+    card.id = RESULT_CARD_ID;
+    card.innerHTML = `
+      <div class="bs-result-inner">
+        <div class="bs-result-header error">
+          <span class="bs-result-icon">❌</span>
+          <div class="bs-result-info">
+            <p class="bs-result-title">Scan Failed</p>
+            <p class="bs-result-msg">${errorMessage}</p>
+          </div>
+          <button class="bs-result-close" id="bs-result-close">✕</button>
+        </div>
+        <div class="bs-result-footer"><p>Blind-Sight · Click to dismiss</p></div>
+      </div>`;
+
+    document.body.appendChild(card);
+
+    const dismiss = () => {
+        card.style.animation = 'bs-result-fade-out 0.3s ease forwards';
+        card.addEventListener('animationend', () => card.remove(), { once: true });
+        setTimeout(() => card.remove(), 400);
+    };
+
+    document.getElementById('bs-result-close')?.addEventListener('click', dismiss);
+    card.addEventListener('click', dismiss);
+    setTimeout(() => { if (document.getElementById(RESULT_CARD_ID)) dismiss(); }, RESULT_AUTO_DISMISS_MS);
 }
 
 export { findTargetButtons, blockButtons, unblockButtons };

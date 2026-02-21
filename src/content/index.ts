@@ -4,7 +4,7 @@
  */
 import { getSignupDetectionResult, isSignupPage } from './detector';
 import { extractTosText, findTosLinks, getTosLinkForBackgroundFetch } from './extractor';
-import { showWarningModal, isModalVisible, attachAgreementListeners } from './blocker';
+import { showWarningModal, isModalVisible, attachAgreementListeners, showPreScanPrompt, showScanResultCard, showScanningBanner, hideScanningBanner, showScanErrorCard } from './blocker';
 import type { ScanResult, ScanResponse, SeverityKey } from '../lib/types';
 
 // ─── State ──────────────────────────────────────────────
@@ -97,8 +97,8 @@ async function performScan(): Promise<ScanResponse> {
     }
 }
 
-// ─── Auto-scan ──────────────────────────────────────────
-async function autoScanIfSignup(): Promise<void> {
+// ─── Prompt-first scan ──────────────────────────────────
+async function promptAndScanIfSignup(): Promise<void> {
     const detection = getSignupDetectionResult(SIGNUP_THRESHOLD);
 
     chrome.runtime.sendMessage({
@@ -110,28 +110,46 @@ async function autoScanIfSignup(): Promise<void> {
 
     if (!detection.isSignup) return;
 
-    // Always track agreement buttons on signup pages, even without a ToS link
+    // Always track agreement buttons on signup pages
     attachAgreementListeners();
 
     const tosLink = getTosLinkForBackgroundFetch();
     if (!tosLink) return;
 
-    console.log('[Blind-Sight] Signup page detected, auto-scanning...');
+    // Show the consent banner instead of auto-scanning
+    console.log('[Blind-Sight] Signup page detected, showing pre-scan prompt...');
+    const userWantsScan = await showPreScanPrompt();
+
+    if (!userWantsScan) {
+        console.log('[Blind-Sight] User dismissed scan prompt.');
+        return;
+    }
+
+    console.log('[Blind-Sight] User requested scan, scanning...');
+    showScanningBanner();
 
     try {
         const result = await performScan();
+        hideScanningBanner();
 
         if ('error' in result) {
-            console.log('[Blind-Sight] Auto-scan error:', result.error);
+            console.log('[Blind-Sight] Scan error:', result.error);
+            showScanErrorCard((result as { error: string }).error);
             return;
         }
 
         const scanResult = result as ScanResult;
 
+        // Always show the in-page result card for all tiers
+        showScanResultCard(scanResult);
+
+        // Additionally show the full blocking modal for orange/red
         if (scanResult.overallSeverity >= 2) {
             showWarningModal(scanResult.clauses, scanResult.overallSeverity as SeverityKey, {
                 category: scanResult.category,
                 serviceName: scanResult.serviceName,
+                hostname: window.location.hostname,
+                aiAlternatives: scanResult.aiAlternatives,
             });
         }
 
@@ -141,7 +159,9 @@ async function autoScanIfSignup(): Promise<void> {
             url: window.location.href,
         });
     } catch (error) {
-        console.error('[Blind-Sight] Auto-scan failed:', error);
+        hideScanningBanner();
+        console.error('[Blind-Sight] Scan failed:', error);
+        showScanErrorCard((error as Error).message || 'An unexpected error occurred');
     }
 }
 
@@ -171,6 +191,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
                 showWarningModal(request.clauses, request.severity ?? 3, {
                     category: request.category,
                     serviceName: request.serviceName,
+                    hostname: window.location.hostname,
+                    aiAlternatives: request.aiAlternatives,
                 });
             }
             return false;
@@ -186,7 +208,7 @@ function init(): void {
 
     setTimeout(() => {
         if (isSignupPage(SIGNUP_THRESHOLD)) {
-            autoScanIfSignup();
+            promptAndScanIfSignup();
         }
     }, AUTO_SCAN_DELAY);
 }
