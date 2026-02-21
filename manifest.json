@@ -1,0 +1,45 @@
+{
+    "manifest_version": 3,
+    "name": "Blind-Sight",
+    "version": "4.0.0",
+    "description": "Your Legal Firewall - Scans Terms of Service for lethal clauses and protects you before you click Accept.",
+    "permissions": [
+        "activeTab",
+        "storage",
+        "scripting",
+        "alarms",
+        "notifications"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "action": {
+        "default_popup": "src/popup/index.html",
+        "default_icon": {
+            "16": "src/assets/icon-16.png",
+            "48": "src/assets/icon-48.png",
+            "128": "src/assets/icon-128.png"
+        }
+    },
+    "options_page": "src/options/options.html",
+    "background": {
+        "service_worker": "src/background/index.ts",
+        "type": "module"
+    },
+    "icons": {
+        "16": "src/assets/icon-16.png",
+        "48": "src/assets/icon-48.png",
+        "128": "src/assets/icon-128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "src/content/index.ts"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}
