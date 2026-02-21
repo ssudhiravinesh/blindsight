@@ -295,4 +295,24 @@ export function isModalVisible(): boolean {
     return document.getElementById(MODAL_ID) !== null;
 }
 
+export function attachAgreementListeners(): void {
+    const buttons = findTargetButtons();
+    for (const btn of buttons) {
+        // Prevent adding multiple listeners to the same button
+        if (btn.hasAttribute('data-bs-listening')) continue;
+        btn.setAttribute('data-bs-listening', 'true');
+
+        btn.addEventListener('click', () => {
+            // Only track if the button is not currently blocked by us
+            if (!btn.hasAttribute(BLOCKED_ATTR)) {
+                console.log('[Blind-Sight] User clicked agreement button. Tracking ToS...');
+                chrome.runtime.sendMessage({
+                    type: 'TRACK_TOS_AGREEMENT',
+                    domain: window.location.hostname.replace('www.', '')
+                });
+            }
+        });
+    }
+}
+
 export { findTargetButtons, blockButtons, unblockButtons };

@@ -92,6 +92,17 @@ export default function App() {
                 setResult(scanResult);
                 setStatus(config.status as Status);
                 setStatusMessage(config.name);
+
+                // Trigger full-screen modal if severity is Cautionary (2) or Critical (3)
+                if (severity >= 2) {
+                    sendToContentScript({
+                        type: 'SHOW_WARNING',
+                        clauses: scanResult.clauses,
+                        severity: severity,
+                        category: scanResult.category,
+                        serviceName: scanResult.serviceName
+                    }).catch(console.error); // Handle potential errors silently
+                }
             }
 
             const h = await loadHistory();

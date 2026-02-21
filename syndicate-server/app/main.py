@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
 from app.middleware.rate_limit import limiter
-from app.routes import analyze, health
+from app.routes import analyze, health, updates
 
 settings = get_settings()
 
@@ -41,6 +41,7 @@ app.add_middleware(
 # ── Routers ──────────────────────────────────────────────────────
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(analyze.router, prefix="/api/v1", tags=["analyze"])
+app.include_router(updates.router, prefix="/api/v1/tos", tags=["updates"])
 
 
 # ── Root (for Railway healthcheck) ───────────────────────────────

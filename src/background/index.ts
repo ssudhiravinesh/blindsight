@@ -164,6 +164,102 @@ async function handleAnalyzeTOS(
     }
 }
 
+// ─── ToS Tracking & Notifications ───────────────────────
+const UPDATE_CHECK_ALARM = 'tos-update-check';
+const SYNDICATE_BASE_URL = 'https://blindsight-production.up.railway.app/api/v1/tos';
+
+async function trackTosDomain(domain: string, version: string): Promise<void> {
+    const data = await chrome.storage.local.get(['trackedTos']);
+    const trackedTos: Record<string, string> = data.trackedTos ?? {};
+
+    // Only update if it's a new domain or we want to overwrite
+    trackedTos[domain] = version;
+    await chrome.storage.local.set({ trackedTos });
+
+}
+
+async function checkForTosUpdates() {
+
+    try {
+        const response = await fetch(`${SYNDICATE_BASE_URL}/updates`);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+        const latestVersions: Record<string, { version: string, url: string }> = await response.json();
+        const data = await chrome.storage.local.get(['trackedTos']);
+        const trackedTos: Record<string, string> = data.trackedTos ?? {};
+
+        let updatesFound = 0;
+
+        for (const [domain, localVersion] of Object.entries(trackedTos)) {
+            const remoteData = latestVersions[domain];
+            // Simple string comparison for mock, ideally use semver or date comparison
+            if (remoteData && remoteData.version !== localVersion) {
+
+
+                // 1. Fetch the new ToS text
+                const fetchResult = await fetchTosContent(remoteData.url);
+                if (fetchResult.success && fetchResult.text) {
+                    try {
+                        // 2. Analyze the new ToS text using the backend server model
+                        const scanResult = await analyzeTOSviaServer(fetchResult.text, domain);
+                        const severity = scanResult.overallSeverity ?? 0;
+
+                        // 3. Customize notification based on severity
+                        let title = 'Terms of Service Update';
+                        let message = `The Terms of Service for ${domain} have changed.`;
+
+                        if (severity >= 2) {
+                            title = '⚠️ Critical ToS Update';
+                            message = `${domain} has added concerning new terms to their agreement!`;
+                        } else {
+                            title = 'ℹ️ Minor ToS Update';
+                            message = `${domain} updated their terms. No major red flags detected.`;
+                        }
+
+                        chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: 'src/assets/icon-128.png',
+                            title,
+                            message,
+                            priority: severity >= 2 ? 2 : 0
+                        });
+
+                        // Update local version so we don't notify again
+                        trackedTos[domain] = remoteData.version;
+                        updatesFound++;
+                    } catch (err) {
+                        console.error(`[Blind-Sight BG] Failed to analyze updated ToS for ${domain}:`, err);
+                    }
+                } else {
+                    console.error(`[Blind-Sight BG] Failed to fetch ToS content from ${remoteData.url}:`, fetchResult.error);
+                }
+            }
+        }
+
+        if (updatesFound > 0) {
+            await chrome.storage.local.set({ trackedTos });
+        }
+
+    } catch (error) {
+        console.error('[Blind-Sight BG] Failed to check for ToS updates:', error);
+    }
+}
+
+// Setup the alarm
+chrome.runtime.onInstalled.addListener(() => {
+    // Run once every 24 hours (1440 minutes)
+    // For quick testing, you can change this to 1 minute
+    chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: 1440 });
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === UPDATE_CHECK_ALARM) {
+        checkForTosUpdates();
+    }
+});
+
+
+
 // ─── Message Router ─────────────────────────────────────
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.type) {
@@ -178,6 +274,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 .then((result) => sendResponse(result))
                 .catch((error) => sendResponse({ success: false, error: (error as Error).message }));
             return true;
+
+        case 'TRACK_TOS_AGREEMENT':
+            if (request.domain) {
+                // Fetch the current version from the backend before saving
+                fetch(`${SYNDICATE_BASE_URL}/version?domain=${encodeURIComponent(request.domain)}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.version) {
+                            trackTosDomain(request.domain, data.version);
+                        }
+                    })
+                    .catch((err) => console.error('[Blind-Sight BG] Failed to fetch current ToS version:', err));
+
+                sendResponse({ success: true, tracking: true });
+                return false; // Handled async, but we don't need to keep the port open for sendResponse
+            }
+            return false;
+
+        case 'TRACK_TOS': // Kept for backwards compatibility/testing
+            if (request.domain && request.version) {
+                trackTosDomain(request.domain, request.version)
+                    .then(() => sendResponse({ success: true }))
+                    .catch((error) => sendResponse({ success: false, error: (error as Error).message }));
+                return true;
+            }
+            return false;
+
+        case 'TEST_ALARM': // Hidden endpoint for manual testing
+            checkForTosUpdates();
+            sendResponse({ success: true });
+            return false;
 
         case 'GET_LAST_RESULT': {
             const tabId = sender.tab?.id;

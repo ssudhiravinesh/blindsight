@@ -4,7 +4,7 @@
  */
 import { getSignupDetectionResult, isSignupPage } from './detector';
 import { extractTosText, findTosLinks, getTosLinkForBackgroundFetch } from './extractor';
-import { showWarningModal, isModalVisible } from './blocker';
+import { showWarningModal, isModalVisible, attachAgreementListeners } from './blocker';
 import type { ScanResult, ScanResponse, SeverityKey } from '../lib/types';
 
 // ─── State ──────────────────────────────────────────────
@@ -114,6 +114,7 @@ async function autoScanIfSignup(): Promise<void> {
     if (!tosLink) return;
 
     console.log('[Blind-Sight] Signup page detected, auto-scanning...');
+    attachAgreementListeners();
 
     try {
         const result = await performScan();
