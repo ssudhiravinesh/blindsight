@@ -19,7 +19,7 @@ router = APIRouter()
 class AnalyzeRequest(BaseModel):
     tos_text: str = Field(
         ...,
-        max_length=30000,
+        max_length=50000,
         description="Raw Terms of Service text to analyze.",
     )
     source_url: str | None = Field(
