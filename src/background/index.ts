@@ -353,9 +353,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     chrome.storage.session.remove([`result_${tabId}`, `detected_${tabId}`]);
 });
 
-if (import.meta.env?.MODE === 'development') {
-    (globalThis as any).testUpdateCheck = () => {
-        console.log('[Blind-Sight BG] Manually triggering ToS update check...');
-        checkForTosUpdates();
-    };
-}
+// Expose for hackathon manual testing in the console
+(self as any).testUpdateCheck = () => {
+    console.log('[Blind-Sight BG] Manually triggering ToS update check...');
+    checkForTosUpdates();
+};
