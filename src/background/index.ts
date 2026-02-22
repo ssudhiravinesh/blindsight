@@ -20,7 +20,7 @@ async function saveToHistory(result: ScanResult, url: string): Promise<void> {
         const data = await chrome.storage.local.get(['scanHistory']);
         let history: HistoryEntry[] = data.scanHistory ?? [];
         history.unshift(entry);
-        history = history.slice(0, 3);
+        history = history.slice(0, 10);
         await chrome.storage.local.set({ scanHistory: history });
     } catch (error) {
         console.error('[Blind-Sight BG] Failed to save to history:', error);
@@ -108,9 +108,15 @@ async function handleAnalyzeTOS(
     const tabId = sender.tab?.id;
     setBadge('scanning', tabId);
 
+    const tosText = request.tosText;
+    const startTime = Date.now();
+
     try {
-        const tosText = request.tosText;
-        if (!tosText || tosText.trim().length === 0) {
+        if (!tosText || typeof tosText !== 'string') {
+            setBadge('error', tabId);
+            return { error: 'Invalid or missing ToS text' };
+        }
+        if (tosText.trim().length === 0) {
             setBadge('notos', tabId);
             return { error: 'No Terms of Service text found to analyze.' };
         }
@@ -148,6 +154,7 @@ async function handleAnalyzeTOS(
         if (tabId) chrome.storage.session.set({ [`result_${tabId}`]: result });
         if (sender.tab?.url) await saveToHistory(result, sender.tab.url);
 
+        result.scanDurationMs = Date.now() - startTime;
         return result;
     } catch (error) {
         setBadge('error', tabId);
@@ -156,7 +163,7 @@ async function handleAnalyzeTOS(
 }
 
 const UPDATE_CHECK_ALARM = 'tos-update-check';
-const SYNDICATE_BASE_URL = 'https://blindsight-production.up.railway.app/api/v1/tos';
+const SYNDICATE_BASE_URL = 'http://localhost:8000/api/v1/tos';
 
 async function trackTosDomain(domain: string, version: string): Promise<void> {
     const data = await chrome.storage.local.get(['trackedTos']);
@@ -229,8 +236,38 @@ async function checkForTosUpdates() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: 1440 });
+    chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: 5 });
     checkForTosUpdates();
+
+    // Create context menu
+    chrome.contextMenus.create({
+        id: 'scan-tos-page',
+        title: 'Scan this page with Blind-Sight',
+        contexts: ['page']
+    });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === 'scan-tos-page' && tab?.id) {
+        chrome.tabs.sendMessage(tab.id, { type: 'MANUAL_SCAN' });
+    }
+});
+
+chrome.commands.onCommand.addListener((command, tab) => {
+    if (command === 'scan-current-page' && tab?.id) {
+        // Synchronous call is required in MV3 to preserve the user gesture token
+        const openPromise = tab.windowId
+            ? chrome.action.openPopup({ windowId: tab.windowId })
+            : chrome.action.openPopup();
+
+        // Set state asynchronously in background
+        chrome.storage.session.set({ autoScan: true }).catch(console.error);
+
+        openPromise.catch((err) => {
+            console.warn('[Blind-Sight BG] Failed to open popup, falling back to background scan:', err);
+            chrome.tabs.sendMessage(tab.id as number, { type: 'MANUAL_SCAN' });
+        });
+    }
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -315,3 +352,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
     chrome.storage.session.remove([`result_${tabId}`, `detected_${tabId}`]);
 });
+
+if (import.meta.env?.MODE === 'development') {
+    (globalThis as any).testUpdateCheck = () => {
+        console.log('[Blind-Sight BG] Manually triggering ToS update check...');
+        checkForTosUpdates();
+    };
+}
