@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     MEGALLM_API_KEY: str = ""
-    MODEL_NAME: str = "llama-3.3-70b-versatile"
+    MODEL_NAME: str = "llama3.3-70b-instruct"
 
     ALLOWED_API_KEYS: str = ""
 
