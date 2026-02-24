@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Signup - Critical Terms (Red)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+        }
+
+        .tagline {
+            text-align: center;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            background: #dc2626;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #dc2626;
+        }
+
+        .tos-link {
+            font-size: 13px;
+            color: #666;
+            margin: 16px 0;
+        }
+
+        .tos-link a {
+            color: #dc2626;
+            text-decoration: none;
+        }
+
+        .signup-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .signup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        .demo-note {
+            margin-top: 24px;
+            padding: 16px;
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #991b1b;
+        }
+
+        /* Hidden ToS content for extension to analyze */
+        .terms-content {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="logo">🔴 TotalCapture</div>
+        <p class="tagline">Predatory Terms Demo</p>
+
+        <span class="severity-badge">EXPECTED: RED 🚨</span>
+
+        <h2>Create Account</h2>
+
+        <form>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" placeholder="••••••••">
+            </div>
+
+            <p class="tos-link">
+                By signing up, you agree to our <a href="#terms">Terms of Service</a>
+            </p>
+
+            <button type="button" class="signup-btn">Accept & Sign Up</button>
+        </form>
+
+        <div class="demo-note">
+            <strong>🎯 Demo Note:</strong> This page has predatory terms (perpetual content rights, data broker sales,
+            no-notice changes).
+            Blind-Sight should show a <strong>RED modal requiring you to type "I PROCEED"</strong>.
+        </div>
+    </div>
+
+    
+    <div class="terms-content" id="terms" data-tos="true">
+        <h1>Terms of Service - TotalCapture</h1>
+        <p>Last updated: January 2024</p>
+
+        <h2>1. Acceptance of Terms</h2>
+        <p>BY USING TOTALCAPTURE, YOU AGREE TO ALL TERMS HEREIN. THESE TERMS CONSTITUTE A LEGALLY BINDING AGREEMENT.</p>
+
+        <h2>2. PERPETUAL CONTENT LICENSE</h2>
+        <p>By using TotalCapture, you grant us a perpetual, irrevocable, worldwide, royalty-free, fully sublicensable
+            license to use, reproduce, modify, adapt, publish, translate, create derivative works from, distribute,
+            perform, and display any and all content you upload, post, or otherwise make available through the service.
+        </p>
+        <p>This license continues even after you delete your account or the content. We may use your content for any
+            purpose, including commercial purposes, without compensation to you.</p>
+        <p>Your photos, videos, and personal content may appear in our advertising, be sold to third parties, or be used
+            to train artificial intelligence systems.</p>
+
+        <h2>3. DATA MONETIZATION</h2>
+        <p>We explicitly sell your personal data to data brokers including but not limited to: Acxiom, Oracle Data
+            Cloud, LiveRamp, Experian, and Equifax.</p>
+        <p>Your data sold includes: Full name, email, phone number, and physical address. Biometric data extracted from
+            photos including facial recognition profiles. Location history and movement patterns. Financial behavior
+            indicators. Health-related data inferred from usage patterns. Political and religious affiliations.</p>
+        <p>There is no way to opt out of data sales while using the service.</p>
+
+        <h2>4. TERMS MODIFICATIONS</h2>
+        <p>We may modify these terms at any time, effective immediately, with no notice required. Your continued use of
+            the service constitutes automatic acceptance of any changes, even if you have not read or been notified of
+            them.</p>
+
+        <h2>5. MANDATORY ARBITRATION - NO OPT-OUT</h2>
+        <p>ALL DISPUTES MUST BE RESOLVED THROUGH BINDING ARBITRATION. THERE IS NO OPTION TO OPT OUT.</p>
+        <p>YOU WAIVE YOUR RIGHT TO: Participate in any class action lawsuit. Trial by jury. Sue us in any court of law.
+            Appeal arbitration decisions.</p>
+        <p>Arbitration will be conducted by an arbitrator of our choosing, at a location of our choosing, and you are
+            responsible for all costs.</p>
+
+        <h2>6. COMPLETE LIABILITY WAIVER</h2>
+        <p>You waive all claims against TotalCapture for any damages whatsoever, including those resulting from our
+            gross negligence, willful misconduct, or illegal actions.</p>
+        <p>We are not responsible for: Data breaches exposing your personal information. Financial losses from fraud
+            enabled by our platform. Emotional distress from misuse of your content. Any harm of any kind, even if we
+            are directly at fault.</p>
+
+        <h2>7. GOVERNMENT DATA SHARING</h2>
+        <p>We actively cooperate with government surveillance programs beyond what is legally required. We proactively
+            share user data with law enforcement and intelligence agencies without requiring warrants, subpoenas, or
+            court orders.</p>
+
+        <h2>8. Account Termination</h2>
+        <p>We may terminate your account at any time, for any reason, without notice. All data licenses granted to us
+            survive termination indefinitely.</p>
+
+        <h2>9. Contact</h2>
+        <p>Questions? Too bad. We don't respond to user inquiries.</p>
+    </div>
+</body>
+
+</html>
