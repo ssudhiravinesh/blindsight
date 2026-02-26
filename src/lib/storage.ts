@@ -1,3 +1,10 @@
+export type ApiProvider = 'openai' | 'gemini';
+
+export interface ApiKeyInfo {
+    key: string;
+    provider: ApiProvider;
+}
+
 export async function getStorageItem<T>(key: string): Promise<T | null> {
     return new Promise((resolve) => {
         chrome.storage.local.get([key], (result) => {
@@ -26,10 +33,16 @@ export async function hasApiKey(): Promise<boolean> {
     });
 }
 
-export async function getApiKey(): Promise<string | null> {
+export async function getApiKey(): Promise<ApiKeyInfo | null> {
     return new Promise((resolve) => {
-        chrome.storage.local.get(['openaiApiKey'], (result) => {
-            resolve((result.openaiApiKey as string) ?? null);
+        chrome.storage.local.get(['geminiApiKey', 'openaiApiKey'], (result) => {
+            if (result.geminiApiKey) {
+                resolve({ key: result.geminiApiKey as string, provider: 'gemini' });
+            } else if (result.openaiApiKey) {
+                resolve({ key: result.openaiApiKey as string, provider: 'openai' });
+            } else {
+                resolve(null);
+            }
         });
     });
 }
