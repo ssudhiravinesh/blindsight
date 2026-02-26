@@ -155,6 +155,7 @@ export interface ScanResult {
     parseError?: boolean;
     rawResponse?: string;
     aiAlternatives?: AISuggestedAlternative[];
+    scanDurationMs?: number;
 }
 
 export interface ScanError {
