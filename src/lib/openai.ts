@@ -4,7 +4,7 @@ import type { ApiProvider } from './storage';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-const SYNDICATE_SERVER_URL = 'https://blindsight-production.up.railway.app/api/v1/analyze';
+const SYNDICATE_SERVER_URL = 'http://localhost:8000/api/v1/analyze';
 const SYNDICATE_API_KEY = 'blindsight_key_1';
 
 const MAX_TOS_LENGTH = 30000;
@@ -42,8 +42,9 @@ Unusual terms that deserve attention:
 - Waiving right to jury trial with no alternatives
 
 ### TIER 3 - CRITICAL (Red) 🚨
-Truly predatory/aggressive terms - RARE, reserve for egregious cases:
-- Explicit selling of data to data brokers by name
+Predatory/aggressive terms that severely compromise user rights or privacy:
+- Explicit selling or sharing of data to data brokers by name or across third-party advertisers (e.g., massive cross-app tracking without opt-out)
+- Collection and sharing of biometric data or highly sensitive personal info without explicit, narrow consent
 - Perpetual, irrevocable, worldwide rights to user content
 - TOS changes effective immediately with NO notice
 - Complete waiver of liability for gross negligence or willful misconduct
@@ -51,11 +52,11 @@ Truly predatory/aggressive terms - RARE, reserve for egregious cases:
 - Government surveillance cooperation beyond legal requirements
 
 ## IMPORTANT CALIBRATION NOTES:
-1. Most major tech companies (Google, Apple, Facebook, Amazon) would score Tier 1 at worst
-2. Reserve Tier 3 for truly predatory terms - it should be RARE
-3. Consider CONTEXT: arbitration alone is NOT critical if it has opt-out
-4. Consider INDUSTRY NORMS: what's standard in that sector?
-5. Consider MITIGATIONS: notice periods, opt-outs, alternatives
+1. DO NOT anchor scores based on name recognition. Brand-name companies can and DO have Tier 2 or Tier 3 clauses.
+2. Consider the SCOPE of data collection. If an e-commerce or utility app collects and monetizes broad device, behavioral, or biometric data, it is at least Tier 2, potentially Tier 3.
+3. Consider CONTEXT: arbitration alone is NOT critical if it has a reasonable opt-out window.
+4. Upgrade the overall severity to Tier 3 if multiple Tier 2 aggressive clauses stack up in the same document.
+5. Consider MITIGATIONS: notice periods, opt-outs, alternatives.
 
 ## SERVICE CATEGORIES (for alternative suggestions):
 Identify what type of service this ToS belongs to. Choose ONE from:
