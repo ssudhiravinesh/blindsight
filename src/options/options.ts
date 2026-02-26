@@ -75,5 +75,5 @@ let visible = false;
 toggleBtn.addEventListener('click', () => {
     visible = !visible;
     apiKeyInput.type = visible ? 'text' : 'password';
-    toggleBtn.textContent = visible ? '🙈' : '👁️';
+    toggleBtn.textContent = visible ? 'HIDE' : 'SHOW';
 });
