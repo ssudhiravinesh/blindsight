@@ -3,6 +3,7 @@ import Header from './components/Header';
 import StatusIndicator from './components/StatusIndicator';
 import ScanButton from './components/ScanButton';
 import ResultCard from './components/ResultCard';
+import ScanSkeleton from './components/ScanSkeleton';
 import HistorySection from './components/HistorySection';
 import type { ScanResponse, ScanResult, HistoryEntry, SeverityKey } from '../lib/types';
 import { isScanError, SEVERITY_CONFIG } from '../lib/types';
@@ -42,13 +43,6 @@ export default function App() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
 
-    useEffect(() => {
-        (async () => {
-            const h = await loadHistory();
-            setHistory(h);
-        })();
-    }, []);
-
     const handleScan = useCallback(async () => {
         setStatus('scanning');
         setStatusMessage('Analyzing Terms of Service...');
@@ -68,6 +62,15 @@ export default function App() {
                 const severity = scanResult.overallSeverity ?? 0;
                 const config = SEVERITY_CONFIG[severity as SeverityKey];
 
+                // Attach hostname so ResultCard can resolve domain-based alternatives
+                const tabs = await new Promise<chrome.tabs.Tab[]>((resolve) =>
+                    chrome.tabs.query({ active: true, currentWindow: true }, resolve)
+                );
+                const activeTab = tabs[0];
+                if (activeTab?.url) {
+                    try { scanResult.hostname = new URL(activeTab.url).hostname.replace(/^www\./, ''); } catch { }
+                }
+
                 setResult(scanResult);
                 setStatus(config.status as Status);
                 setStatusMessage(config.name);
@@ -78,7 +81,9 @@ export default function App() {
                         clauses: scanResult.clauses,
                         severity: severity,
                         category: scanResult.category,
-                        serviceName: scanResult.serviceName
+                        serviceName: scanResult.serviceName,
+                        hostname: scanResult.hostname,
+                        aiAlternatives: scanResult.aiAlternatives,
                     }).catch(console.error);
                 }
             }
@@ -94,6 +99,19 @@ export default function App() {
         }
     }, []);
 
+    useEffect(() => {
+        (async () => {
+            const h = await loadHistory();
+            setHistory(h);
+
+            const sessionData = await chrome.storage.session.get(['autoScan']);
+            if (sessionData.autoScan) {
+                await chrome.storage.session.remove(['autoScan']);
+                handleScan();
+            }
+        })();
+    }, [handleScan]);
+
     return (
         <div className="flex flex-col min-h-[500px]">
             <Header />
@@ -103,15 +121,17 @@ export default function App() {
 
                 <ScanButton onClick={handleScan} scanning={scanning} disabled={scanning} />
 
-                {result && <ResultCard result={result} />}
+                {scanning && <div className="animate-fade-in"><ScanSkeleton /></div>}
+
+                {!scanning && result && <ResultCard result={result} />}
 
                 {errorMessage && !result && (
-                    <div className="bs-glass bs-gradient-danger p-4 animate-slide-in">
+                    <div className="border border-bs-danger bg-[#D73A4A10] rounded-lg p-3 animate-slide-in">
                         <div className="flex items-start gap-3">
                             <span className="text-lg">❌</span>
                             <div>
-                                <h3 className="font-bold text-sm text-bs-danger mb-1">Error</h3>
-                                <p className="text-xs text-bs-text-secondary">{errorMessage}</p>
+                                <h3 className="font-bold text-sm text-bs-danger mb-0.5 tracking-wide">Error</h3>
+                                <p className="text-xs text-bs-danger/80">{errorMessage}</p>
                             </div>
                         </div>
                     </div>
