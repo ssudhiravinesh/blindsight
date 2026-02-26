@@ -92,7 +92,7 @@ export function extractTextFromHtml(html: string): string {
     ];
 
     for (const selector of removeSelectors) {
-        try { doc.querySelectorAll(selector).forEach((el) => el.remove()); } catch {  }
+        try { doc.querySelectorAll(selector).forEach((el) => el.remove()); } catch { }
     }
 
     const mainSelectors = [
@@ -111,7 +111,7 @@ export function extractTextFromHtml(html: string): string {
                 mainContent = el;
                 break;
             }
-        } catch {  }
+        } catch { }
     }
 
     const contentElement = mainContent ?? doc.body;
@@ -127,7 +127,88 @@ async function fetchAndExtractText(url: string): Promise<{ success: boolean; url
     try {
         const response = await fetch(url, {
             method: 'GET',
-            headers: { Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,* }
+            headers: { Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
+            credentials: 'omit',
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+        const html = await response.text();
+        const text = extractTextFromHtml(html);
+
+        if (text.length < 200) {
+            return { success: false, url, error: 'Extracted text too short', needsBackgroundFetch: true };
+        }
+
+        return { success: true, url, text, charCount: text.length };
+    } catch {
+        return { success: false, url, error: 'Content script fetch blocked', needsBackgroundFetch: true };
+    }
+}
+
+function checkIfTosPage(): boolean {
+    const url = window.location.href.toLowerCase();
+    const title = document.title.toLowerCase();
+    const h1 = document.querySelector('h1')?.textContent?.toLowerCase() ?? '';
+
+    const tosPatterns = [
+        'terms', 'tos', 'terms-of-service', 'terms_of_service', 'termsofservice',
+        'terms-of-use', 'terms_of_use', 'user-agreement', 'user_agreement',
+        'useragreement', 'legal/terms', 'policies/terms', 'about/terms',
+        'eula', 'end-user-license', 'service-agreement', 'privacy-policy',
+        'privacy_policy', 'privacypolicy',
+    ];
+
+    for (const p of tosPatterns) if (url.includes(p)) return true;
+
+    const titlePatterns = [
+        'terms of service', 'terms and conditions', 'terms of use',
+        'user agreement', 'service agreement', 'legal terms',
+        'privacy policy', 'tos', 'eula',
+    ];
+
+    for (const p of titlePatterns) if (title.includes(p) || h1.includes(p)) return true;
+
+    return false;
+}
+
+function extractMainContent(): string | null {
+    const selectors = [
+        'main', 'article', '[role="main"]', '.main-content',
+        '.content', '.page-content', '.article-content',
+        '.legal-content', '.terms-content', '.tos-content',
+        '#content', '#main', '#main-content',
+    ];
+
+    for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el && (el.textContent?.trim().length ?? 0) > 500) return el.textContent!.trim();
+    }
+
+    const body = document.body.cloneNode(true) as HTMLElement;
+    ['nav', 'header', 'footer', 'aside', '.sidebar', '.nav', '.menu', 'script', 'style'].forEach((s) => {
+        body.querySelectorAll(s).forEach((el) => el.remove());
+    });
+
+    const text = body.textContent?.trim() ?? '';
+    return text.length > 500 ? text : null;
+}
+
+function extractInlineToS(): string | null {
+    const selectors = [
+        '[data-tos]', '[data-tos="true"]', '[data-terms]', '[data-terms-of-service]',
+        '.terms-content', '.tos-content', '.legal-text', '.terms-of-service',
+        '.terms-and-conditions', '.legal-content', '.legal-terms',
+        '#terms-text', '#tos-text', '#terms', '#tos',
+        '#terms-of-service', '#terms-and-conditions', '#legal-content', '#legal-terms',
+        '.terms-modal', '.tos-modal', '.terms-container', '.tos-container',
+    ];
+
+    for (const sel of selectors) {
+        try {
+            const el = document.querySelector(sel);
+            if (el && (el.textContent?.trim().length ?? 0) > 200) return el.textContent!.trim();
+        } catch { }
     }
     return null;
 }
