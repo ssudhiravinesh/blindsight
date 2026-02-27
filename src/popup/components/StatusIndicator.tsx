@@ -18,12 +18,12 @@ export default function StatusIndicator({ status, message }: Props) {
     const dotColor = statusColors[status] ?? statusColors.idle;
 
     return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bs-bg-secondary/50 border border-bs-border/50">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-bs-bg-tertiary/50 border border-bs-border w-fit">
             <span
-                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotColor}`}
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`}
                 aria-hidden
             />
-            <span className="text-xs text-bs-text-secondary font-medium">{message}</span>
+            <span className="text-xs text-bs-text-secondary font-semibold tracking-wide">{message}</span>
         </div>
     );
 }
