@@ -49,61 +49,67 @@ export default function ResultCard({ result }: Props) {
             await navigator.clipboard.writeText(lines.join('\n'));
             setCopySuccess(true);
             setTimeout(() => setCopySuccess(false), 2000);
-        } catch {  }
+        } catch { }
     };
 
     return (
-        <div className={`bs-glass ${gradientClass[config.cardClass] ?? ''} animate-slide-in overflow-hidden`}>
-            {}
-            <div className="p-4 flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                    <span className="text-2xl">{config.icon}</span>
-                    <div>
-                        <h3 className="font-bold text-sm">{config.title}</h3>
-                        <p className="text-xs text-bs-text-secondary mt-0.5">{config.message}</p>
+        <div className={`bs-glass ${gradientClass[config.cardClass] ?? ''} overflow-hidden border-t-2`} style={{ borderTopColor: `var(--bs-${config.cardClass})` }}>
+            {/* Header Area */}
+            <div className="p-4 flex flex-col gap-4">
+                <div className="flex items-start justify-between pb-3 border-b border-bs-border">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl drop-shadow-md">{config.icon}</span>
+                        <div>
+                            <h3 className="font-bold text-sm tracking-wide text-bs-text-primary">{config.title}</h3>
+                            <p className="text-xs text-bs-text-secondary mt-0.5 font-medium">{config.message}</p>
+                        </div>
                     </div>
+                    <TrustBadge severity={severity as SeverityKey} />
                 </div>
-                <TrustBadge severity={severity as SeverityKey} />
-            </div>
 
-            {}
-            {result.summary && (
-                <div className="px-4 pb-3">
-                    <p className="text-xs text-bs-text-secondary leading-relaxed bg-bs-bg-tertiary/40 rounded-lg px-3 py-2">
-                        {result.summary}
-                    </p>
-                </div>
-            )}
+                {/* Summary */}
+                {result.summary && (
+                    <div className="bg-bs-bg-tertiary/20 rounded-md p-3 border border-bs-border/50">
+                        <p className="text-sm text-bs-text-secondary leading-relaxed font-normal">
+                            {result.summary}
+                        </p>
+                    </div>
+                )}
 
-            {}
-            {result.clauses.length > 0 && (
-                <div className="px-4 pb-3 flex flex-col gap-1.5">
-                    {result.clauses.map((clause, i) => (
-                        <ClauseItem key={i} clause={clause} />
-                    ))}
-                </div>
-            )}
+                {/* Clauses */}
+                {result.clauses.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                        {result.clauses.map((clause, i) => (
+                            <ClauseItem key={i} clause={clause} />
+                        ))}
+                    </div>
+                )}
+            </div>{/* End Header Area flex-col */}
 
-            {}
+            {/* Static Alternatives */}
             {alts && hasStaticAlts && severity >= 2 && (
-                <div className="px-4 pb-3">
-                    <div className="bg-bs-success/5 border border-bs-success/15 rounded-xl p-3">
-                        <h4 className="text-xs font-semibold text-bs-success mb-2">🛡️ Safer {alts.displayName} Alternatives</h4>
-                        <div className="flex flex-col gap-1.5">
+                <div className="px-4 pb-4">
+                    <div className="border border-bs-border bg-bs-bg-primary/50 rounded-lg p-3">
+                        <h4 className="text-[11px] font-bold text-bs-text-muted uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                            <span className="text-bs-success">🛡️</span> Safer {alts.displayName} Alternatives
+                        </h4>
+                        <div className="flex flex-col gap-2">
                             {alts.alternatives.slice(0, 3).map((alt) => (
                                 <a
                                     key={alt.name}
                                     href={alt.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                    className="flex items-center gap-3 p-2 rounded-md hover:bg-bs-bg-tertiary transition-colors group"
                                 >
-                                    <span className="text-base">{alt.icon}</span>
+                                    <span className="text-lg opacity-80 group-hover:opacity-100">{alt.icon}</span>
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-semibold text-bs-success">{alt.name}</span>
-                                        <p className="text-[10px] text-bs-text-muted truncate">{alt.reason}</p>
+                                        <span className="text-xs font-bold text-bs-text-primary group-hover:text-bs-accent transition-colors">{alt.name}</span>
+                                        <p className="text-[11px] text-bs-text-muted truncate mt-0.5">{alt.reason}</p>
                                     </div>
-                                    <span className="text-bs-success/50 group-hover:text-bs-success group-hover:translate-x-0.5 transition-all text-sm">→</span>
+                                    <svg className="w-4 h-4 text-bs-text-muted group-hover:text-bs-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </a>
                             ))}
                         </div>
@@ -111,35 +117,40 @@ export default function ResultCard({ result }: Props) {
                 </div>
             )}
 
-            {}
+            {/* AI Alternatives */}
             {!hasStaticAlts && hasAiAlts && severity >= 2 && (
-                <div className="px-4 pb-3">
-                    <div className="bg-bs-success/5 border border-bs-success/15 rounded-xl p-3">
-                        <h4 className="text-xs font-semibold text-bs-success mb-2">🤖 AI-Suggested Alternatives</h4>
-                        <div className="flex flex-col gap-1.5">
+                <div className="px-4 pb-4">
+                    <div className="border border-bs-border bg-bs-bg-primary/50 rounded-lg p-3">
+                        <h4 className="text-[11px] font-bold text-bs-text-muted uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                            <span className="text-bs-accent">🤖</span> AI-Suggested Alternatives
+                        </h4>
+                        <div className="flex flex-col gap-2">
                             {result.aiAlternatives!.slice(0, 3).map((alt) => (
                                 <a
                                     key={alt.name}
                                     href={alt.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                    className="flex items-center gap-3 p-2 rounded-md hover:bg-bs-bg-tertiary transition-colors group"
                                 >
-                                    <span className="text-base">🔗</span>
+                                    <span className="text-lg opacity-80 group-hover:opacity-100">🔗</span>
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-semibold text-bs-success">{alt.name}</span>
-                                        <p className="text-[10px] text-bs-text-muted truncate">{alt.reason}</p>
+                                        <span className="text-xs font-bold text-bs-text-primary group-hover:text-bs-accent transition-colors">{alt.name}</span>
+                                        <p className="text-[11px] text-bs-text-muted truncate mt-0.5">{alt.reason}</p>
                                     </div>
-                                    <span className="text-bs-success/50 group-hover:text-bs-success group-hover:translate-x-0.5 transition-all text-sm">→</span>
+                                    <svg className="w-4 h-4 text-bs-text-muted group-hover:text-bs-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </a>
                             ))}
                         </div>
-                        <p className="text-[9px] text-bs-text-muted mt-2 text-center opacity-60">These alternatives were suggested by AI — verify before visiting</p>
+                        <p className="text-[9px] text-bs-text-muted mt-3 text-center opacity-70">
+                            These alternatives were suggested by AI — verify before visiting
+                        </p>
                     </div>
                 </div>
             )}
 
-            {}
             <div className="px-4 pb-4">
                 <button
                     onClick={handleCopy}
@@ -147,6 +158,11 @@ export default function ResultCard({ result }: Props) {
                 >
                     {copySuccess ? '✅ Copied to clipboard!' : '📋 Copy Report'}
                 </button>
+                {result.scanDurationMs && (
+                    <p className="text-[10px] text-bs-text-muted text-center mt-3 opacity-70">
+                        ⚡ Analyzed in {(result.scanDurationMs / 1000).toFixed(1)}s
+                    </p>
+                )}
             </div>
         </div>
     );
