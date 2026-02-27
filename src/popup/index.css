@@ -3,18 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --bs-bg-primary: #0f0f14;
-  --bs-bg-secondary: #1a1a24;
-  --bs-bg-tertiary: #252532;
-  --bs-text-primary: #ffffff;
-  --bs-text-secondary: #a0a0b0;
-  --bs-text-muted: #606070;
-  --bs-accent: #6366f1;
-  --bs-accent-hover: #818cf8;
-  --bs-danger: #ef4444;
-  --bs-success: #22c55e;
-  --bs-warning: #f59e0b;
-  --bs-border: #2a2a3a;
+  --bs-bg-primary: #121212;
+  --bs-bg-secondary: #1E2026;
+  --bs-bg-tertiary: #2D3139;
+  --bs-text-primary: #FFFFFF;
+  --bs-text-secondary: #9FA6B2;
+  --bs-text-muted: #737A86;
+  --bs-accent: #1098FC;
+  --bs-accent-hover: #037DD6;
+  --bs-danger: #D73A4A;
+  --bs-success: #2DA44E;
+  --bs-warning: #E3B341;
+  --bs-border: #3B4046;
 }
 
 * {
@@ -30,7 +30,7 @@ html, body, #root {
   overflow-y: auto;
   background: var(--bs-bg-primary);
   color: var(--bs-text-primary);
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -42,30 +42,30 @@ html, body, #root {
 
 @layer components {
   .bs-glass {
-    background: rgba(26, 26, 36, 0.8);
-    backdrop-filter: blur(12px);
+    background: var(--bs-bg-secondary);
     border: 1px solid var(--bs-border);
-    border-radius: 12px;
+    border-radius: 8px;
   }
 
+  /* Clean, subtle backgrounds for the status cards, rather than full gradients */
   .bs-gradient-safe {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.04));
-    border-color: rgba(34, 197, 94, 0.2);
+    background-color: rgba(45, 164, 78, 0.05);
+    border-color: rgba(45, 164, 78, 0.2);
   }
 
   .bs-gradient-notable {
-    background: linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(234, 179, 8, 0.04));
-    border-color: rgba(234, 179, 8, 0.2);
+    background-color: rgba(227, 179, 65, 0.05);
+    border-color: rgba(227, 179, 65, 0.2);
   }
 
   .bs-gradient-caution {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(249, 115, 22, 0.04));
-    border-color: rgba(249, 115, 22, 0.2);
+    background-color: rgba(215, 58, 74, 0.05);
+    border-color: rgba(215, 58, 74, 0.2);
   }
 
   .bs-gradient-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.04));
-    border-color: rgba(239, 68, 68, 0.2);
+    background-color: rgba(215, 58, 74, 0.1);
+    border-color: rgba(215, 58, 74, 0.3);
   }
 }
 
