@@ -10,14 +10,14 @@ export default function ScanButton({ onClick, scanning, disabled }: Props) {
             onClick={onClick}
             disabled={disabled}
             className={`
-        w-full py-3 px-4 rounded-xl font-semibold text-sm
-        transition-all duration-300 ease-out
-        flex items-center justify-center gap-2
+        w-full py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide
+        transition-all duration-200 ease-out
+        flex items-center justify-center gap-2.5
         ${scanning
-                    ? 'bg-bs-accent/20 text-bs-accent border border-bs-accent/30 cursor-wait'
-                    : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-400 hover:to-purple-500 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:translate-y-0'
+                    ? 'bg-bs-accent/20 text-bs-accent cursor-wait'
+                    : 'bg-bs-accent text-white hover:bg-bs-accent-hover shadow-lg shadow-bs-accent/20 hover:shadow-bs-accent/40 active:scale-[0.98]'
                 }
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:shadow-none
       `}
         >
             {scanning ? (
@@ -27,8 +27,10 @@ export default function ScanButton({ onClick, scanning, disabled }: Props) {
                 </>
             ) : (
                 <>
-                    <span className="text-base">🔍</span>
-                    Scan Terms of Service
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Scan Terms
                 </>
             )}
         </button>
