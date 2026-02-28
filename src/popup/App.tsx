@@ -14,11 +14,22 @@ function sendToContentScript(message: Record<string, unknown>): Promise<ScanResp
     return new Promise((resolve, reject) => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             const tab = tabs[0];
-            if (!tab?.id) { reject(new Error('No active tab')); return; }
+            if (!tab?.id || !tab?.url) { reject(new Error('No active tab')); return; }
+
+            // Guard against restricted pages
+            if (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('https://chrome.google.com/webstore')) {
+                reject(new Error('Cannot scan this type of page. Please try on a regular website.'));
+                return;
+            }
 
             chrome.tabs.sendMessage(tab.id, message, (response) => {
                 if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
+                    const errorMsg = chrome.runtime.lastError.message || '';
+                    if (errorMsg.includes('Receiving end does not exist')) {
+                        reject(new Error('Please refresh this page before scanning. The extension was just installed or updated.'));
+                    } else {
+                        reject(new Error(errorMsg));
+                    }
                 } else {
                     resolve(response as ScanResponse);
                 }
