@@ -4,7 +4,7 @@ import { showWarningModal, isModalVisible, attachAgreementListeners, showPreScan
 import type { ScanResult, ScanResponse, SeverityKey } from '../lib/types';
 
 let lastScanResult: ScanResponse | null = null;
-let scanInProgress = false;
+let activeScanPromise: Promise<ScanResponse> | null = null;
 const SIGNUP_THRESHOLD = 50;
 const AUTO_SCAN_DELAY = 1500;
 
@@ -36,53 +36,55 @@ async function analyzeTosViaBackground(tosText: string): Promise<ScanResponse> {
     return sendMessage<ScanResponse>({ type: 'ANALYZE_TOS', tosText });
 }
 
-async function performScan(): Promise<ScanResponse> {
-    if (scanInProgress) {
-        return { error: 'Scan already in progress' };
+function performScan(): Promise<ScanResponse> {
+    if (activeScanPromise) {
+        return activeScanPromise;
     }
 
-    scanInProgress = true;
+    activeScanPromise = (async (): Promise<ScanResponse> => {
+        try {
+            const extraction = await extractTosText();
 
-    try {
-        const extraction = await extractTosText();
-
-        if (extraction.success) {
-            const result = await analyzeTosViaBackground(extraction.text);
-            lastScanResult = result;
-            return result;
-        }
-
-        if (extraction.needsBackgroundFetch && extraction.url) {
-            const fetchResult = await fetchTosViaBackground(extraction.url);
-
-            if (fetchResult.success && fetchResult.text && fetchResult.text.length > 200) {
-                const result = await analyzeTosViaBackground(fetchResult.text);
+            if (extraction.success) {
+                const result = await analyzeTosViaBackground(extraction.text);
                 lastScanResult = result;
                 return result;
             }
-        }
 
-        const allLinks = extraction.allLinks ?? findTosLinks();
-        for (const link of allLinks) {
-            if (link.url === extraction.url) continue;
+            if (extraction.needsBackgroundFetch && extraction.url) {
+                const fetchResult = await fetchTosViaBackground(extraction.url);
 
-            try {
-                const fetchResult = await fetchTosViaBackground(link.url);
                 if (fetchResult.success && fetchResult.text && fetchResult.text.length > 200) {
                     const result = await analyzeTosViaBackground(fetchResult.text);
                     lastScanResult = result;
                     return result;
                 }
-            } catch {
             }
-        }
 
-        return { error: extraction.error ?? 'Could not extract Terms of Service' };
-    } catch (error) {
-        return { error: (error as Error).message || 'Scan failed' };
-    } finally {
-        scanInProgress = false;
-    }
+            const allLinks = extraction.allLinks ?? findTosLinks();
+            for (const link of allLinks) {
+                if (link.url === extraction.url) continue;
+
+                try {
+                    const fetchResult = await fetchTosViaBackground(link.url);
+                    if (fetchResult.success && fetchResult.text && fetchResult.text.length > 200) {
+                        const result = await analyzeTosViaBackground(fetchResult.text);
+                        lastScanResult = result;
+                        return result;
+                    }
+                } catch {
+                }
+            }
+
+            return { error: extraction.error ?? 'Could not extract Terms of Service' };
+        } catch (error) {
+            return { error: (error as Error).message || 'Scan failed' };
+        } finally {
+            activeScanPromise = null;
+        }
+    })();
+
+    return activeScanPromise;
 }
 
 async function promptAndScanIfSignup(): Promise<void> {
@@ -163,7 +165,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
                 detection,
                 tosLinks: getTosLinkForBackgroundFetch()?.allLinks ?? [],
                 lastScanResult,
-                scanInProgress,
+                scanInProgress: activeScanPromise !== null,
             });
             return false;
         }
