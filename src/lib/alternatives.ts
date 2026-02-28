@@ -404,6 +404,14 @@ export const ALTERNATIVES_DATABASE: Record<string, AlternativeCategory> = {
         ],
     },
 
+    surveillance: {
+        displayName: 'Facial Recognition / Surveillance',
+        alternatives: [
+            { name: 'Fawkes', url: 'https://sandlab.cs.uchicago.edu/fawkes/', reason: 'Image cloaking tool that poisons photos against facial recognition scraping', icon: '🎭' },
+            { name: 'CompreFace', url: 'https://github.com/exadel-inc/CompreFace', reason: 'Self-hosted open-source face recognition — your data never leaves your server', icon: '🔒' },
+            { name: 'EFF Surveillance Self-Defense', url: 'https://ssd.eff.org', reason: 'Actionable guides to defend against facial recognition and tracking', icon: '🛡️' },
+        ],
+    },
     unknown: {
         displayName: 'Online Service',
         alternatives: [
@@ -480,6 +488,8 @@ const DOMAIN_CATEGORY_MAP: Record<string, string> = {
     'news.google.com': 'news_media', 'apple.news': 'news_media', 'flipboard.com': 'news_media',
     'salesforce.com': 'crm', 'hubspot.com': 'crm',
     'reddit.com': 'forum',
+    'temu.com': 'ecommerce',
+    'clearview.ai': 'surveillance', 'clearviewai.com': 'surveillance',
 };
 
 export function getCategoryFromDomain(hostname: string): string | null {
