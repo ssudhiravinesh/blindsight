@@ -1,0 +1,322 @@
+{
+  "extName": {
+    "message": "Blind-Sight",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Your Legal Firewall - Scans Terms of Service for harmful clauses and blocks the Accept button with severity-graded warnings.",
+    "description": "Extension description"
+  },
+  "readyToScan": {
+    "message": "Ready to scan",
+    "description": "Idle status message"
+  },
+  "scanning": {
+    "message": "Analyzing Terms of Service...",
+    "description": "Scanning status message"
+  },
+  "scanFailed": {
+    "message": "Scan failed",
+    "description": "Failed status message"
+  },
+  "scanTerms": {
+    "message": "Scan Terms",
+    "description": "Button text to trigger scan"
+  },
+  "scansToday": {
+    "message": "Scans today: $1 / $2",
+    "description": "Scans quota indicator",
+    "placeholders": {
+      "1": { "content": "$1" },
+      "2": { "content": "$2" }
+    }
+  },
+  "upgradeToPro": {
+    "message": "Upgrade to Pro 👑",
+    "description": "Upgrade button text"
+  },
+  "proMember": {
+    "message": "Pro Member 👑",
+    "description": "Pro badge text"
+  },
+  "quotaReachedTitle": {
+    "message": "Daily Quota Reached",
+    "description": "Quota error title"
+  },
+  "quotaReachedDesc": {
+    "message": "You have reached your limit of 5 free scans for today. Upgrade to Pro for unlimited instant scans!",
+    "description": "Quota error description"
+  },
+  "generalError": {
+    "message": "An unexpected error occurred.",
+    "description": "Fallback error"
+  },
+  "recentScans": {
+    "message": "Recent Scans",
+    "description": "History section title"
+  },
+  "issue": {
+    "message": "issue",
+    "description": "Singular issue"
+  },
+  "issues": {
+    "message": "issues",
+    "description": "Plural issues"
+  },
+  "justNow": {
+    "message": "Just now",
+    "description": "Time unit"
+  },
+  "minAgo": {
+    "message": "$1m ago",
+    "description": "Minutes ago",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "hourAgo": {
+    "message": "$1h ago",
+    "description": "Hours ago",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "dayAgo": {
+    "message": "$1d ago",
+    "description": "Days ago",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "restrictedPageError": {
+    "message": "Cannot scan this type of page. Please try on a regular website.",
+    "description": "Error on chrome:// pages"
+  },
+  "refreshPageError": {
+    "message": "Please refresh this page before scanning. The extension was just installed or updated.",
+    "description": "Error when content script not active"
+  },
+  "copyReport": {
+    "message": "Copy Report",
+    "description": "Copy button text"
+  },
+  "copiedToClipboard": {
+    "message": "Copied to clipboard!",
+    "description": "Success message"
+  },
+  "analyzedIn": {
+    "message": "Analyzed in $1s",
+    "description": "Analysis duration text",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "saferAlts": {
+    "message": "Safer $1 Alternatives",
+    "description": "Alternatives section title",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "aiAlts": {
+    "message": "AI-Suggested Alternatives",
+    "description": "AI alternatives title"
+  },
+  "aiAltWarning": {
+    "message": "These alternatives were suggested by AI — verify before visiting",
+    "description": "AI alternatives warning"
+  },
+  "waitCountdown": {
+    "message": "Wait $1 seconds...",
+    "description": "Wait countdown button text",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "readTermsProceed": {
+    "message": "I've Read the Terms - Proceed",
+    "description": "Proceed button after countdown"
+  },
+  "proceedRisk": {
+    "message": "Proceed at My Own Risk",
+    "description": "Proceed button for red modal"
+  },
+  "typeToUnlock": {
+    "message": "Type \"$1\" to Unlock",
+    "description": "Red modal lock button",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "leavePage": {
+    "message": "Leave This Page",
+    "description": "Leave page button text"
+  },
+  "cautionaryTermsDetected": {
+    "message": "Cautionary Terms Detected",
+    "description": "Orange modal title"
+  },
+  "cautionaryTermsDesc": {
+    "message": "Blind-Sight found concerning terms in $1's agreement",
+    "description": "Orange modal description",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "criticalTermsDetected": {
+    "message": "Critical Terms — High Risk",
+    "description": "Red modal title"
+  },
+  "criticalTermsDesc": {
+    "message": "Blind-Sight detected aggressive terms in $1's agreement",
+    "description": "Red modal description",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "typeToUnlockLabel": {
+    "message": "Type \"$1\" to unlock",
+    "description": "Red modal instructions",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "signupPageDetected": {
+    "message": "Sign-up page detected",
+    "description": "Banner title"
+  },
+  "signupPageBannerDesc": {
+    "message": "Would you like Blind-Sight to scan the Terms of Service before you continue?",
+    "description": "Banner description"
+  },
+  "scanTermsBanner": {
+    "message": "Scan Terms",
+    "description": "Banner button"
+  },
+  "analyzingTosBanner": {
+    "message": "Analyzing Terms of Service...",
+    "description": "Scanning banner title"
+  },
+  "fewSecondsBanner": {
+    "message": "This may take a few seconds",
+    "description": "Scanning banner subtitle"
+  },
+  "termsLookGood": {
+    "message": "Terms Look Good",
+    "description": "Safe overall status"
+  },
+  "termsLookGoodDesc": {
+    "message": "Standard, industry-normal terms. You're good to go!",
+    "description": "Safe overall status description"
+  },
+  "notableTerms": {
+    "message": "Notable Terms",
+    "description": "Notable overall status"
+  },
+  "notableTermsDesc": {
+    "message": "Some terms worth knowing about, but common practice.",
+    "description": "Notable overall status description"
+  },
+  "proceedCaution": {
+    "message": "Proceed with Caution",
+    "description": "Caution overall status"
+  },
+  "proceedCautionDesc": {
+    "message": "Unusual terms detected. Review before accepting.",
+    "description": "Caution overall status description"
+  },
+  "criticalTermsOverall": {
+    "message": "Critical Terms Detected",
+    "description": "Danger overall status"
+  },
+  "criticalTermsOverallDesc": {
+    "message": "Aggressive terms found. Proceed at your own risk.",
+    "description": "Danger overall status description"
+  },
+  "clickToDismiss": {
+    "message": "Blind-Sight · Click to dismiss",
+    "description": "Toast footer"
+  },
+  "optionsTitle": {
+    "message": "Blind-Sight Settings",
+    "description": "Options page header title"
+  },
+  "optionsSub": {
+    "message": "Legal Firewall Setup",
+    "description": "Options page header subtitle"
+  },
+  "apiKeyTitle": {
+    "message": "🔑 API Key (Optional)",
+    "description": "API key card title"
+  },
+  "apiKeySubtitle": {
+    "message": "Blind-Sight works perfectly without a key using our backend. Provide your own OpenAI or Gemini key only if you want to bypass rate limits.",
+    "description": "API key card subtitle"
+  },
+  "usingServer": {
+    "message": "Using: Blind-Sight Server",
+    "description": "Indicator when using server"
+  },
+  "usingKey": {
+    "message": "Using: Your $1 Key",
+    "description": "Indicator when using custom key",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "saveKey": {
+    "message": "Save API Key",
+    "description": "Button to save key"
+  },
+  "clearKey": {
+    "message": "Clear Key",
+    "description": "Button to clear key"
+  },
+  "aboutTitle": {
+    "message": "ℹ️ About",
+    "description": "About card title"
+  },
+  "versionLabel": {
+    "message": "Version",
+    "description": "Version label"
+  },
+  "engineLabel": {
+    "message": "Engine",
+    "description": "Engine label"
+  },
+  "privacyLabel": {
+    "message": "Privacy",
+    "description": "Privacy label"
+  },
+  "privacyDesc": {
+    "message": "Keys stay locally on your device",
+    "description": "Privacy description value"
+  },
+  "apiKeySaved": {
+    "message": "✅ $1 API key saved! Scans will now use your key.",
+    "description": "Toast message when key is saved",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "apiKeyRemoved": {
+    "message": "🗑 API key removed. Using Blind-Sight server.",
+    "description": "Toast message when key is cleared"
+  },
+  "invalidKeyFormat": {
+    "message": "Invalid key format. Should start with \"sk-\" (OpenAI) or \"AIza\" (Gemini)",
+    "description": "Error toast for invalid key format"
+  },
+  "pleaseEnterKey": {
+    "message": "Please enter an API key",
+    "description": "Error toast for empty key input"
+  },
+  "hide": {
+    "message": "HIDE",
+    "description": "Hide text"
+  },
+  "show": {
+    "message": "SHOW",
+    "description": "Show text"
+  }
+}

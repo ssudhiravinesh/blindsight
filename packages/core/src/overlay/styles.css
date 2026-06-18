@@ -1,0 +1,668 @@
+/**
+ * Copyright (c) 2026 Sudhir Avinesh. All rights reserved.
+ * Proprietary and Confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ */
+
+/* ==========================================================================
+   Overlay & Layout
+   ========================================================================== */
+
+#blind-sight-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2147483646;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    animation: bs-fade-in 0.25s ease-out;
+}
+
+@keyframes bs-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ==========================================================================
+   Warning Modal
+   ========================================================================== */
+
+#blind-sight-modal {
+    background: #0d0d1b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+    animation: bs-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+@keyframes bs-slide-in {
+    from {
+        transform: translateY(16px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.bs-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bs-modal-header.orange {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 179, 8, 0.05) 100%);
+    border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.bs-modal-header.red {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.05) 100%);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.bs-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 4px;
+}
+
+.bs-modal-subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.bs-modal-body {
+    padding: 16px 24px;
+}
+
+/* ==========================================================================
+   Clause List
+   ========================================================================== */
+
+.bs-clause-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+}
+
+.bs-clause-item {
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #e2e8f0;
+    line-height: 1.5;
+    border-left: 4px solid;
+    box-sizing: border-box;
+}
+
+.bs-clause-item.orange {
+    border-color: #f97316;
+}
+
+.bs-clause-item.red {
+    border-color: #ef4444;
+}
+
+/* ==========================================================================
+   Input / Confirm Fields
+   ========================================================================== */
+
+.bs-confirm-label {
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.bs-confirm-label strong {
+    color: #f3f4f6;
+    letter-spacing: 0.5px;
+}
+
+.bs-confirm-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: 2px;
+    outline: none;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.bs-confirm-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.bs-confirm-input.valid {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.06);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
+.bs-confirm-input.invalid {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.06);
+    animation: bs-shake 0.3s ease;
+}
+
+@keyframes bs-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+/* ==========================================================================
+   Footer & Buttons
+   ========================================================================== */
+
+.bs-modal-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bs-btn {
+    padding: 11px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.bs-btn:focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 2px;
+}
+
+.bs-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.bs-btn-abort {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.bs-btn-abort:hover {
+    background: rgba(239, 68, 68, 0.22);
+}
+
+.bs-btn-proceed {
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bs-btn-proceed:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   Alternatives Section
+   ========================================================================== */
+
+.bs-alt-section {
+    margin-top: 14px;
+    padding: 14px;
+    background: rgba(34, 197, 94, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(34, 197, 94, 0.1);
+}
+
+.bs-alt-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #22c55e;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bs-alt-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.bs-alt-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+.bs-alt-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.bs-alt-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bs-alt-name {
+    font-weight: 600;
+    color: #10b981;
+    font-size: 13px;
+}
+
+.bs-alt-reason {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bs-alt-arrow {
+    color: #10b981;
+    font-size: 14px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.bs-alt-card:hover .bs-alt-arrow {
+    opacity: 1;
+    transform: translateX(3px);
+}
+
+/* ==========================================================================
+   Pre-Scan Prompt Banner
+   ========================================================================== */
+
+#blind-sight-prompt-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2147483645;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: bs-banner-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bs-banner-slide-in {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes bs-banner-slide-out {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-100%); opacity: 0; }
+}
+
+.bs-prompt-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #0f0f1b 0%, #15152a 100%);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.25);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+}
+
+.bs-prompt-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.bs-prompt-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.bs-prompt-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0 0 2px;
+}
+
+.bs-prompt-subtitle {
+    font-size: 11px;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.bs-prompt-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.bs-prompt-scan-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    transition: all 0.2s ease;
+}
+
+.bs-prompt-scan-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.bs-prompt-dismiss-btn {
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bs-prompt-dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+}
+
+/* ==========================================================================
+   Scanning Banner
+   ========================================================================== */
+
+#bs-scanning-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2147483645;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: bs-banner-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bs-scanning-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #0d0d1b 0%, #15152a 100%);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.25);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+}
+
+.bs-scanning-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #818cf8;
+    border-radius: 50%;
+    animation: bs-spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes bs-spin {
+    to { transform: rotate(360deg); }
+}
+
+.bs-scanning-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.bs-scanning-sub {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-left: auto;
+}
+
+/* ==========================================================================
+   Result Card (Toast)
+   ========================================================================== */
+
+#bs-result-card {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 2147483645;
+    width: 360px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: bs-result-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bs-result-fade-in {
+    from {
+        transform: translateY(-12px) scale(0.96);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes bs-result-fade-out {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-12px) scale(0.96);
+        opacity: 0;
+    }
+}
+
+.bs-result-inner {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0d0d1b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+}
+
+.bs-result-inner * {
+    box-sizing: border-box;
+}
+
+.bs-result-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bs-result-header.safe {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
+    border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.bs-result-header.notable {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
+    border-bottom: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.bs-result-header.caution {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
+    border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.bs-result-header.danger,
+.bs-result-header.error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bs-result-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.bs-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bs-result-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 2px;
+}
+
+.bs-result-msg {
+    font-size: 11px;
+    color: #94a3b8;
+    margin: 0;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bs-result-close {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.bs-result-close:hover {
+    color: #e2e8f0;
+}
+
+.bs-result-body {
+    padding: 12px 16px;
+    background: #0d0d1b;
+}
+
+.bs-result-clauses {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.bs-result-clause {
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: #cbd5e1;
+    line-height: 1.4;
+    border-left: 3px solid;
+}
+
+.bs-result-clause.green { border-color: #22c55e; }
+.bs-result-clause.yellow { border-color: #eab308; }
+.bs-result-clause.orange { border-color: #f97316; }
+.bs-result-clause.red { border-color: #ef4444; }
+
+.bs-result-footer {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
+}
+
+.bs-result-footer p {
+    font-size: 10px;
+    color: #64748b;
+    margin: 0;
+}
+
+.bs-result-grade {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.bs-result-grade.safe { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.bs-result-grade.notable { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+.bs-result-grade.caution { background: rgba(249, 115, 22, 0.1); color: #f97316; }
+.bs-result-grade.danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+/* ==========================================================================
+   High Contrast / Forced Colors Support (a11y)
+   ========================================================================== */
+@media (forced-colors: active) {
+    #blind-sight-modal,
+    #blind-sight-prompt-banner,
+    #bs-result-card,
+    #bs-scanning-banner {
+        border: 2px solid CanvasText !important;
+        background-color: Canvas !important;
+        box-shadow: none !important;
+    }
+    .bs-btn,
+    .bs-prompt-scan-btn,
+    .bs-prompt-dismiss-btn,
+    .bs-result-close {
+        border: 1px solid ButtonText !important;
+        background-color: ButtonFace !important;
+        color: ButtonText !important;
+    }
+    .bs-confirm-input {
+        border: 1px solid FieldText !important;
+        background-color: Field !important;
+        color: FieldText !important;
+    }
+    .bs-btn:focus,
+    .bs-confirm-input:focus,
+    .bs-alt-card:focus {
+        outline: 2px solid Highlight !important;
+    }
+    .bs-clause-item,
+    .bs-result-clause {
+        border-left: 4px solid CanvasText !important;
+        background: transparent !important;
+    }
+}

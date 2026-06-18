@@ -1,0 +1,41 @@
+name: Package Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.8.0
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Monorepo
+        run: pnpm run build
+
+      - name: Package Extension ZIP
+        run: |
+          cd packages/cloud
+          zip -r ../../blindsight-extension-${{ github.ref_name }}.zip dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: blindsight-extension-${{ github.ref_name }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

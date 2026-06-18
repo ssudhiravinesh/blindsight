@@ -7,3 +7,7 @@ __pycache__/
 venv/
 .DS_Store
 package-lock.json
+.turbo/
+.eslintcache
+playwright-report/
+test-results/
