@@ -191,14 +191,31 @@ These factors can LOWER a tier by one level when present and meaningful:
 
 ### Step 5: Check for Aggravating Factors
 These factors can RAISE a tier by one level:
-- Data collection scope is disproportionate to the service's core function
+- Data collection scope is disproportionate to the service's core function (see Disproportionate Collection Override below)
 - Privacy policy is exceptionally long, vague, or uses circular definitions
 - Key terms are buried in footnotes, linked sub-documents, or FAQ pages not part of the main agreement
 - The service has been subject to regulatory enforcement actions for privacy violations (if evident from the ToS mentioning settlements or consent decrees)
 - Dark patterns in the user interface that the ToS implicitly authorizes
+- The platform lists numerous broad data categories it collects (device identifiers, sensor data, clipboard, contacts, location, browsing history, keystroke patterns) but provides NO privacy dashboard, data download, or deletion workflow
+
+**Disproportionate Collection Override:**
+If a service's primary function is simple (e.g., shopping, utility, flashlight, calculator, casual game) but its ToS/privacy policy describes collecting data categories that are dramatically beyond what the service needs — such as contacts, call logs, clipboard contents, device sensor readings, installed apps, precise location history, or browsing activity — this is an automatic escalation:
+- If the service would otherwise be Tier 0 or 1, escalate to Tier 2
+- If the service would otherwise be Tier 2, escalate to Tier 3
+- **E-commerce/Shopping Platform Scope Test:** A shopping platform needs your name, shipping address, payment info, and purchase history. If it ALSO describes collecting ANY of the following: device identifiers beyond basic analytics, precise geolocation tracking, contacts/address book, clipboard data, browsing history outside the platform, sensor/accelerometer data, installed app lists, or advertising IDs shared with third parties — that is disproportionate collection. Combined with sharing this data with unspecified "third parties," "business partners," or "affiliates," this is an automatic Tier 3 classification. Shopping apps that harvest user data far beyond what is needed for e-commerce are among the most predatory services on the internet.
 
 ### Step 6: Apply the Stacking Rule
-Count distinct Tier 2 characteristics across ALL categories (data, content, terms, liability). If 3 or more are present, escalate to Tier 3.
+Before finalizing your classification, COUNT the distinct Tier 2 characteristics you identified across ALL categories (data sharing, content rights, TOS changes, cancellation/auto-renewal, arbitration, liability). If you count 3 or more DISTINCT Tier 2-level characteristics, you MUST escalate the overall severity to Tier 3. Do not leave it at Tier 2 when multiple aggressive practices stack up — the accumulation is itself predatory.
+
+Examples of distinct characteristics that each count as one:
+- Data shared with external third parties (1)
+- Vague/unspecified data recipients (2)
+- Disproportionate data categories collected (3)
+- Content licensing beyond platform needs (4)
+- TOS changes with <30 day notice (5)
+- Difficult cancellation / early termination fees (6)
+- Arbitration with no or very short opt-out (7)
+- Broad liability waiver (8)
 
 ─────────────────────────────────────────────
 ## COMMON CLASSIFICATION PITFALLS TO AVOID
@@ -208,15 +225,15 @@ Count distinct Tier 2 characteristics across ALL categories (data, content, term
 
 2. **DO NOT penalize standard telemetry.** Infrastructure metrics, crash reporting, anonymized usage analytics, and A/B testing data collection are industry-standard engineering practices, not privacy violations. These are Tier 0 even in isolation.
 
-3. **DO NOT automatically elevate for broad language alone.** Many large-company ToS documents are drafted broadly by legal teams to provide maximum protection. What matters is the SUBSTANCE of what the platform actually does, as described across the full ToS and privacy policy. Broad protective language ("to the maximum extent permitted by law") combined with clear privacy controls and transparency is Tier 1, not Tier 2.
+3. **DO NOT automatically elevate for broad language alone — BUT only when the platform provides clear privacy controls.** Many large-company ToS documents are drafted broadly by legal teams to provide maximum protection. What matters is the SUBSTANCE of what the platform actually does. Broad protective language combined with clear privacy controls and transparency is Tier 1, not Tier 2. HOWEVER, if a platform uses broad language about data collection AND does NOT provide a comprehensive privacy dashboard, data download tools, transparency reports, or granular opt-outs, then the broad language should be interpreted at face value — do NOT give the benefit of the doubt.
 
 4. **DO NOT double-count.** If a platform's data sharing with "partners" is specifically described as sharing with service providers who process data on the platform's behalf (hosting, payment, analytics tools), that is NOT the same as selling data externally. Count each practice only once and in its most accurate tier.
 
-5. **DO respect the Tier 2/3 boundary.** Tier 3 is reserved for genuinely extreme cases: services that exist primarily to extract value from users through their data, content, or attention while offering disproportionately little in return. Most commercial services — even aggressive ones — are Tier 2 at most. Reserve Tier 3 for platforms where the ToS reads like a permission slip for surveillance and exploitation.
+5. **DO respect the Tier 2/3 boundary — but DO NOT under-classify genuinely predatory services.** Tier 3 is reserved for genuinely extreme cases: services that exist primarily to extract value from users through their data while offering disproportionately little in return. However, DO NOT default to Tier 2 just because a service is a recognizable brand. If the ToS grants the platform sweeping data collection rights across many categories, shares data with unspecified third parties, provides no meaningful opt-outs, and the scope of collection is wildly disproportionate to the service offered, that IS Tier 3.
 
 6. **DO recognize standard legal boilerplate.** Limitation of liability for indirect/consequential damages, force majeure clauses, governing law provisions, and severability clauses are present in virtually every ToS and are NOT concerning. Do not flag these.
 
-7. **DO differentiate between "we may" and "we do."** ToS documents often use permissive language ("we may share data with partners") for legal flexibility. Look for evidence of whether this is hypothetical protection or describes actual practice. If the privacy policy separately confirms active data sharing programs, weight it as actual practice; if the ToS says "we may" but the privacy policy describes no such program, treat it as boilerplate.
+7. **DO differentiate between "we may" and "we do" — with an important exception.** ToS documents often use permissive language ("we may share data with partners") for legal flexibility. If the platform has strong privacy controls, a privacy dashboard, and transparency reports, "we may" can be treated as boilerplate. HOWEVER, if the platform lists MANY broad data categories it collects (e.g., device info, sensors, contacts, browsing history, location, clipboard) AND uses "we may share" language about that data AND provides no transparency mechanisms or privacy dashboard, treat "we may" as "we do." The combination of broad collection + broad sharing language + no transparency = actual practice, not hypothetical protection.
 
 ─────────────────────────────────────────────
 ## SPECIFIC CLAUSE-TYPE GUIDANCE

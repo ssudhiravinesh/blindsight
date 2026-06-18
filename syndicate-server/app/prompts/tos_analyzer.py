@@ -201,10 +201,24 @@ If 3+ DISTINCT Tier 2 characteristics are present simultaneously, elevate to Tie
 - Comprehensive privacy dashboard, transparency reports, GDPR compliance, data deletion workflows, open-source components
 
 ### Step 5: Aggravating Factors (can raise tier by one)
-- Disproportionate data collection, exceptionally vague privacy policy, dark patterns, regulatory enforcement history
+- Disproportionate data collection (see override below), exceptionally vague privacy policy, dark patterns, regulatory enforcement history
+- Platform lists broad data categories (device IDs, sensors, clipboard, contacts, location, browsing history) but provides NO privacy dashboard or deletion workflow
+
+**Disproportionate Collection Override:**
+If a service's primary function is simple (shopping, utility, casual game) but its ToS/privacy policy describes collecting \
+data far beyond what the service needs (contacts, call logs, clipboard, device sensors, installed apps, precise location, \
+browsing activity), this is an automatic escalation:
+- Tier 0/1 → escalate to Tier 2
+- Tier 2 → escalate to Tier 3
+- **E-commerce/Shopping Platform Scope Test:** A shopping platform needs name, address, payment, purchase history. \
+If it ALSO collects device identifiers beyond basic analytics, precise geolocation, contacts, clipboard data, browsing \
+history outside the platform, sensor data, installed app lists, or advertising IDs shared with third parties — that is \
+disproportionate collection. Combined with sharing to unspecified "third parties" or "affiliates" = automatic Tier 3.
 
 ### Step 6: Apply the Stacking Rule
-Count distinct Tier 2 characteristics. If 3+ present, escalate to Tier 3.
+Before finalizing, COUNT distinct Tier 2 characteristics across ALL categories (data sharing, content rights, TOS changes, \
+cancellation, arbitration, liability). If 3+ DISTINCT Tier 2 characteristics present, you MUST escalate to Tier 3. \
+The accumulation of multiple aggressive practices is itself predatory.
 
 ─────────────────────────────────────────────
 ## COMMON CLASSIFICATION PITFALLS TO AVOID
@@ -212,11 +226,18 @@ Count distinct Tier 2 characteristics. If 3+ present, escalate to Tier 3.
 
 1. DO NOT confuse ecosystem advertising with data selling. Running your own ad network ≠ selling data.
 2. DO NOT penalize standard telemetry — crash reporting, A/B testing, usage analytics are Tier 0.
-3. DO NOT elevate for broad language alone. Broad legal drafting + clear privacy controls = Tier 1.
+3. DO NOT elevate for broad language alone — BUT only when the platform provides clear privacy controls. \
+Broad legal drafting + privacy dashboard + transparency = Tier 1. Broad data collection language + NO privacy \
+dashboard + NO transparency reports + NO granular opt-outs = interpret at face value, do NOT give benefit of the doubt.
 4. DO NOT double-count. Service providers processing data on behalf of the platform ≠ external data selling.
-5. DO respect the Tier 2/3 boundary. Reserve Tier 3 for genuinely extreme, predatory cases.
+5. DO respect the Tier 2/3 boundary — but DO NOT under-classify genuinely predatory services. If the ToS grants \
+sweeping data collection across many categories, shares with unspecified third parties, provides no meaningful \
+opt-outs, and collection scope is wildly disproportionate to the service offered, that IS Tier 3.
 6. DO recognize standard legal boilerplate — limitation of liability, force majeure, severability are normal.
-7. DO differentiate "we may" vs "we do" — look for confirmed practice, not hypothetical language.
+7. DO differentiate "we may" vs "we do" — with an important exception. If the platform has privacy controls \
+and transparency, "we may" can be treated as boilerplate. BUT if the platform lists MANY broad data categories \
+AND uses "we may share" language AND provides no transparency mechanisms, treat "we may" as "we do." \
+Broad collection + broad sharing language + no transparency = actual practice.
 
 ─────────────────────────────────────────────
 ## SPECIFIC CLAUSE-TYPE GUIDANCE
