@@ -13,6 +13,7 @@ import {
     getApiKey,
     normalizeToS,
     hashToS,
+    htmlToText,
     isAllowedTosFetchUrl,
     getCachedScanResult,
     registerDevice,
@@ -113,20 +114,6 @@ function setBadge(status: BadgeStatus, tabId?: number): void {
     chrome.action.setBadgeBackgroundColor(colorOptions);
 }
 
-function extractTextFromHTML(html: string): string {
-    return html
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/\s+/g, ' ')
-        .trim();
-}
 
 interface FetchTosResult {
     success: boolean;
@@ -168,7 +155,7 @@ async function fetchTosContent(url: string, senderTabUrl?: string): Promise<Fetc
         const html = await response.text();
         if (html.length > MAX_TOS_FETCH_BYTES) throw new Error('Document too large');
 
-        const text = extractTextFromHTML(html);
+        const text = htmlToText(html);
         return { success: true, url, text, charCount: text.length };
     } catch (error) {
         return { success: false, error: (error as Error).message, url };
