@@ -63,8 +63,14 @@ function httpsUrl(value: unknown): string | undefined {
 /** Extracts the JSON object from a model response, tolerating ``` fences. */
 export function extractJson(text: string): unknown {
   let clean = text.trim();
-  const fenced = clean.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced) clean = fenced[1].trim();
+  // indexOf instead of a regex: model output is untrusted and the regex backtracked polynomially.
+  const open = clean.indexOf("```");
+  if (open !== -1) {
+    let start = open + 3;
+    if (clean.startsWith("json", start)) start += 4;
+    const close = clean.indexOf("```", start);
+    if (close !== -1) clean = clean.slice(start, close).trim();
+  }
   return JSON.parse(clean);
 }
 
