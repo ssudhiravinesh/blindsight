@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/**/*.{ts,tsx}",
+    "lint": "eslint src e2e",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
