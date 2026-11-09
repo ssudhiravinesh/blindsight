@@ -5,17 +5,16 @@
  */
 
 import type { ScanResult, SeverityKey } from '../../types';
-import { el } from '../renderer';
+import { el, icon, logoMark } from '../renderer';
 import { t } from '../../utils/i18n';
 
 const RESULT_AUTO_DISMISS_MS = 8000;
 
 const RESULT_CONFIG: Record<
     SeverityKey,
-    { icon: string; titleKey: string; defTitle: string; msgKey: string; defMsg: string; grade: string; cls: string }
+    { titleKey: string; defTitle: string; msgKey: string; defMsg: string; grade: string; cls: string }
 > = {
     0: {
-        icon: '✅',
         titleKey: 'termsLookGood',
         defTitle: 'Terms Look Good',
         msgKey: 'termsLookGoodDesc',
@@ -24,7 +23,6 @@ const RESULT_CONFIG: Record<
         cls: 'safe'
     },
     1: {
-        icon: '📝',
         titleKey: 'notableTerms',
         defTitle: 'Notable Terms',
         msgKey: 'notableTermsDesc',
@@ -33,7 +31,6 @@ const RESULT_CONFIG: Record<
         cls: 'notable'
     },
     2: {
-        icon: '⚠️',
         titleKey: 'proceedCaution',
         defTitle: 'Proceed with Caution',
         msgKey: 'proceedCautionDesc',
@@ -42,7 +39,6 @@ const RESULT_CONFIG: Record<
         cls: 'caution'
     },
     3: {
-        icon: '🚨',
         titleKey: 'criticalTermsOverall',
         defTitle: 'Critical Terms Detected',
         msgKey: 'criticalTermsOverallDesc',
@@ -69,7 +65,7 @@ export function createScanResultCard(
     const message = t(config.msgKey, config.defMsg);
     const serviceName = result.serviceName ?? t('thisService', 'this service');
 
-    const clausesHTML = (result.clauses ?? []).slice(0, 4).map((c) => {
+    const clausesHTML = [...(result.clauses ?? [])].sort((a, b) => b.severity - a.severity).slice(0, 4).map((c) => {
         return el('li', { className: `bs-result-clause ${clauseSeverityClass(c.severity)}` }, [
             c.explanation ?? c.quote ?? 'Concerning clause'
         ]);
@@ -82,7 +78,7 @@ export function createScanResultCard(
             id: 'bs-result-close',
             'aria-label': t('dismissResults', 'Dismiss results')
         }, 
-        ['✕']
+        [icon('x', 14)]
     );
 
     const card = el(
@@ -96,18 +92,17 @@ export function createScanResultCard(
         [
             el('div', { className: 'bs-result-inner' }, [
                 el('div', { className: `bs-result-header ${config.cls}` }, [
-                    el('span', { className: 'bs-result-icon', 'aria-hidden': 'true' }, [config.icon]),
+                    el('div', { className: `bs-result-grade ${config.cls}`, 'aria-label': `Grade ${config.grade}` }, [config.grade]),
                     el('div', { className: 'bs-result-info' }, [
                         el('p', { className: 'bs-result-title' }, [title]),
-                        el('p', { className: 'bs-result-msg' }, [`${serviceName} — ${message}`])
+                        el('p', { className: 'bs-result-msg' }, [`${serviceName} · ${message}`])
                     ]),
-                    el('div', { className: `bs-result-grade ${config.cls}`, 'aria-label': `Grade ${config.grade}` }, [config.grade]),
                     closeBtn
                 ]),
                 clausesHTML.length > 0
                     ? el('div', { className: 'bs-result-body' }, [el('ul', { className: 'bs-result-clauses' }, clausesHTML)])
                     : null,
-                el('div', { className: 'bs-result-footer' }, [el('p', {}, [t('clickToDismiss', 'Blind-Sight · Click to dismiss')])])
+                el('div', { className: 'bs-result-footer' }, [logoMark(14), el('p', {}, [t('clickToDismiss', 'Blind-Sight · Click to dismiss')])])
             ])
         ]
     );
@@ -165,7 +160,7 @@ export function createScanErrorCard(
             id: 'bs-result-close',
             'aria-label': t('dismissError', 'Dismiss error')
         }, 
-        ['✕']
+        [icon('x', 14)]
     );
 
     const card = el(
@@ -178,14 +173,14 @@ export function createScanErrorCard(
         [
             el('div', { className: 'bs-result-inner' }, [
                 el('div', { className: 'bs-result-header error' }, [
-                    el('span', { className: 'bs-result-icon', 'aria-hidden': 'true' }, ['❌']),
+                    el('span', { className: 'bs-result-icon error' }, [icon('alert', 18)]),
                     el('div', { className: 'bs-result-info' }, [
                         el('p', { className: 'bs-result-title' }, [t('scanFailed', 'Scan Failed')]),
                         el('p', { className: 'bs-result-msg' }, [errorMessage])
                     ]),
                     closeBtn
                 ]),
-                el('div', { className: 'bs-result-footer' }, [el('p', {}, [t('clickToDismiss', 'Blind-Sight · Click to dismiss')])])
+                el('div', { className: 'bs-result-footer' }, [logoMark(14), el('p', {}, [t('clickToDismiss', 'Blind-Sight · Click to dismiss')])])
             ])
         ]
     );

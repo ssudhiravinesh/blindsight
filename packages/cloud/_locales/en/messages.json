@@ -20,7 +20,7 @@
     "description": "Failed status message"
   },
   "scanTerms": {
-    "message": "Scan Terms",
+    "message": "Scan terms",
     "description": "Button text to trigger scan"
   },
   "rateLimitedTitle": {
@@ -36,7 +36,7 @@
     "description": "Fallback error"
   },
   "recentScans": {
-    "message": "Recent Scans",
+    "message": "Recent scans",
     "description": "History section title"
   },
   "issue": {
@@ -55,21 +55,27 @@
     "message": "$1m ago",
     "description": "Minutes ago",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "hourAgo": {
     "message": "$1h ago",
     "description": "Hours ago",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "dayAgo": {
     "message": "$1d ago",
     "description": "Days ago",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "restrictedPageError": {
@@ -81,88 +87,102 @@
     "description": "Error when content script not active"
   },
   "copyReport": {
-    "message": "Copy Report",
+    "message": "Copy report",
     "description": "Copy button text"
   },
   "copiedToClipboard": {
-    "message": "Copied to clipboard!",
+    "message": "Copied",
     "description": "Success message"
   },
   "analyzedIn": {
     "message": "Analyzed in $1s",
     "description": "Analysis duration text",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "saferAlts": {
-    "message": "Safer $1 Alternatives",
+    "message": "Safer $1 alternatives",
     "description": "Alternatives section title",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "aiAlts": {
-    "message": "AI-Suggested Alternatives",
+    "message": "AI-suggested alternatives",
     "description": "AI alternatives title"
   },
   "aiAltWarning": {
-    "message": "These alternatives were suggested by AI — verify before visiting",
+    "message": "Suggested by AI. Verify before signing up.",
     "description": "AI alternatives warning"
   },
   "waitCountdown": {
     "message": "Wait $1 seconds...",
     "description": "Wait countdown button text",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "readTermsProceed": {
-    "message": "I've Read the Terms - Proceed",
+    "message": "I've read the terms, continue",
     "description": "Proceed button after countdown"
   },
   "proceedRisk": {
-    "message": "Proceed at My Own Risk",
+    "message": "Continue at my own risk",
     "description": "Proceed button for red modal"
   },
   "typeToUnlock": {
-    "message": "Type \"$1\" to Unlock",
+    "message": "Type \"$1\" to unlock",
     "description": "Red modal lock button",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "leavePage": {
-    "message": "Leave This Page",
+    "message": "Leave this page",
     "description": "Leave page button text"
   },
   "cautionaryTermsDetected": {
-    "message": "Cautionary Terms Detected",
+    "message": "Cautionary terms detected",
     "description": "Orange modal title"
   },
   "cautionaryTermsDesc": {
     "message": "Blind-Sight found concerning terms in $1's agreement",
     "description": "Orange modal description",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "criticalTermsDetected": {
-    "message": "Critical Terms — High Risk",
+    "message": "Critical terms: high risk",
     "description": "Red modal title"
   },
   "criticalTermsDesc": {
     "message": "Blind-Sight detected aggressive terms in $1's agreement",
     "description": "Red modal description",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "typeToUnlockLabel": {
     "message": "Type \"$1\" to unlock",
     "description": "Red modal instructions",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "signupPageDetected": {
@@ -170,23 +190,23 @@
     "description": "Banner title"
   },
   "signupPageBannerDesc": {
-    "message": "Would you like Blind-Sight to scan the Terms of Service before you continue?",
+    "message": "Check the Terms of Service before you create an account?",
     "description": "Banner description"
   },
   "scanTermsBanner": {
-    "message": "Scan Terms",
+    "message": "Scan terms of service now",
     "description": "Banner button"
   },
   "analyzingTosBanner": {
-    "message": "Analyzing Terms of Service...",
+    "message": "Reading the fine print…",
     "description": "Scanning banner title"
   },
   "fewSecondsBanner": {
-    "message": "This may take a few seconds",
+    "message": "This usually takes a few seconds",
     "description": "Scanning banner subtitle"
   },
   "termsLookGood": {
-    "message": "Terms Look Good",
+    "message": "Terms look good",
     "description": "Safe overall status"
   },
   "termsLookGoodDesc": {
@@ -194,7 +214,7 @@
     "description": "Safe overall status description"
   },
   "notableTerms": {
-    "message": "Notable Terms",
+    "message": "Notable terms",
     "description": "Notable overall status"
   },
   "notableTermsDesc": {
@@ -202,7 +222,7 @@
     "description": "Notable overall status description"
   },
   "proceedCaution": {
-    "message": "Proceed with Caution",
+    "message": "Proceed with caution",
     "description": "Caution overall status"
   },
   "proceedCautionDesc": {
@@ -210,7 +230,7 @@
     "description": "Caution overall status description"
   },
   "criticalTermsOverall": {
-    "message": "Critical Terms Detected",
+    "message": "Critical terms",
     "description": "Danger overall status"
   },
   "criticalTermsOverallDesc": {
@@ -222,42 +242,44 @@
     "description": "Toast footer"
   },
   "optionsTitle": {
-    "message": "Blind-Sight Settings",
+    "message": "Settings",
     "description": "Options page header title"
   },
   "optionsSub": {
-    "message": "Legal Firewall Setup",
+    "message": "Blind-Sight · Terms of Service analyzer",
     "description": "Options page header subtitle"
   },
   "apiKeyTitle": {
-    "message": "🔑 API Key (Optional)",
+    "message": "API key (optional)",
     "description": "API key card title"
   },
   "apiKeySubtitle": {
-    "message": "Blind-Sight works perfectly without a key using our backend. Provide your own OpenAI or Gemini key only if you want to bypass rate limits.",
+    "message": "Blind-Sight works without a key using our backend. Add your own OpenAI or Gemini key to analyze directly from your browser.",
     "description": "API key card subtitle"
   },
   "usingServer": {
-    "message": "Using: Blind-Sight Server",
+    "message": "Using Blind-Sight server",
     "description": "Indicator when using server"
   },
   "usingKey": {
-    "message": "Using: Your $1 Key",
+    "message": "Using your $1 key",
     "description": "Indicator when using custom key",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "saveKey": {
-    "message": "Save API Key",
+    "message": "Save key",
     "description": "Button to save key"
   },
   "clearKey": {
-    "message": "Clear Key",
+    "message": "Clear",
     "description": "Button to clear key"
   },
   "aboutTitle": {
-    "message": "ℹ️ About",
+    "message": "About",
     "description": "About card title"
   },
   "versionLabel": {
@@ -277,14 +299,16 @@
     "description": "Privacy description value"
   },
   "apiKeySaved": {
-    "message": "✅ $1 API key saved! Scans will now use your key.",
+    "message": "$1 API key saved. Scans will now use your key.",
     "description": "Toast message when key is saved",
     "placeholders": {
-      "1": { "content": "$1" }
+      "1": {
+        "content": "$1"
+      }
     }
   },
   "apiKeyRemoved": {
-    "message": "🗑 API key removed. Using Blind-Sight server.",
+    "message": "API key removed. Using the Blind-Sight server.",
     "description": "Toast message when key is cleared"
   },
   "invalidKeyFormat": {
@@ -302,5 +326,58 @@
   "show": {
     "message": "SHOW",
     "description": "Show text"
+  },
+  "settings": {
+    "message": "Settings",
+    "description": "Settings button label"
+  },
+  "leavePageBtn": {
+    "description": "Leave page button",
+    "message": "Leave this page"
+  },
+  "notNow": {
+    "description": "Dismiss button on the sign-up prompt",
+    "message": "Not now"
+  },
+  "dismissScanPrompt": {
+    "description": "Prompt close button label",
+    "message": "Dismiss scan prompt"
+  },
+  "dismissResults": {
+    "description": "Result toast close label",
+    "message": "Dismiss results"
+  },
+  "dismissError": {
+    "description": "Error toast close label",
+    "message": "Dismiss error"
+  },
+  "thisService": {
+    "description": "Fallback service name",
+    "message": "this service"
+  },
+  "waitCountdownPrefix": {
+    "description": "Countdown prefix",
+    "message": "Wait "
+  },
+  "waitCountdownSuffix": {
+    "description": "Countdown suffix",
+    "message": "s to continue"
+  },
+  "typeToUnlockLabelPrefix": {
+    "description": "Confirm label prefix",
+    "message": "Type "
+  },
+  "typeToUnlockLabelSuffix": {
+    "description": "Confirm label suffix",
+    "message": " to unlock"
+  },
+  "waitCountdownLabel": {
+    "message": "Wait $1 seconds to continue",
+    "description": "Countdown aria label",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
   }
 }

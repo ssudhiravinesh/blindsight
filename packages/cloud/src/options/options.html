@@ -7,349 +7,229 @@
     <title>Blind-Sight — Settings</title>
     <style>
         :root {
-            --bg-primary: #121212;
-            --bg-secondary: #1E2026;
-            --bg-tertiary: #2D3139;
-            --text-primary: #FFFFFF;
-            --text-secondary: #9FA6B2;
-            --text-muted: #737A86;
-            --accent: #1098FC;
-            --accent-hover: #037DD6;
-            --success: #2DA44E;
-            --danger: #D73A4A;
-            --border: #3B4046;
+            --ink-900: #0B0D12;
+            --ink-850: #10131A;
+            --ink-800: #151922;
+            --line: rgba(255, 255, 255, 0.07);
+            --line-strong: rgba(255, 255, 255, 0.12);
+            --fg: #ECEEF3;
+            --fg-muted: #9AA1B1;
+            --fg-subtle: #666E80;
+            --accent: #8B7CFF;
+            --accent-soft: #B3A9FF;
+            --ok: #34D399;
+            --danger: #F43F5E;
+            color-scheme: dark;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 40px 20px;
-            line-height: 1.6;
+            min-height: 100vh;
+            background:
+                radial-gradient(60% 40% at 50% -5%, rgba(139, 124, 255, 0.16), transparent 70%),
+                radial-gradient(40% 30% at 90% 0%, rgba(91, 140, 255, 0.08), transparent 70%),
+                var(--ink-900);
+            background-repeat: no-repeat;
+            color: var(--fg);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+            padding: 56px 20px 80px;
         }
 
-        .container {
-            max-width: 520px;
-            margin: 0 auto;
-        }
+        .container { max-width: 560px; margin: 0 auto; }
 
-        .header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .header-icon {
-            width: 56px;
-            height: 56px;
-            margin: 0 auto 12px;
-            border-radius: 12px;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 152, 252, 0.2);
-        }
-
-        .header-icon svg {
-            width: 32px;
-            height: 32px;
-        }
-
-        .header h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
-
-        .header p {
-            font-size: 13px;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: 600;
-            margin-top: 4px;
-        }
+        .header { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+        .header svg { flex-shrink: 0; filter: drop-shadow(0 8px 20px rgba(114, 98, 255, 0.45)); }
+        .header h1 { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+        .header p { font-size: 13px; color: var(--fg-muted); }
 
         .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            background: rgba(16, 19, 26, 0.8);
+            border: 1px solid var(--line);
+            border-radius: 18px;
             padding: 24px;
             margin-bottom: 16px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 40px -24px rgba(0, 0, 0, 0.8);
         }
 
-        .card-title {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 6px;
-            display: flex;
+        .card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 4px; }
+        .card-subtitle { font-size: 13px; color: var(--fg-muted); margin-bottom: 20px; }
+
+        .mode-indicator {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: var(--text-primary);
-            letter-spacing: 0.02em;
-        }
-
-        .card-subtitle {
+            padding: 6px 12px;
+            border-radius: 999px;
             font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            line-height: 1.5;
+            font-weight: 500;
+            margin-bottom: 16px;
+            border: 1px solid;
         }
+        .mode-indicator.server { color: var(--ok); background: rgba(52, 211, 153, 0.08); border-color: rgba(52, 211, 153, 0.22); }
+        .mode-indicator.byok { color: var(--accent-soft); background: rgba(139, 124, 255, 0.1); border-color: rgba(139, 124, 255, 0.28); }
+        .mode-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent); }
 
-        .input-group {
-            position: relative;
-        }
+        label.field-label { display: block; font-size: 12px; font-weight: 500; color: var(--fg-muted); margin-bottom: 6px; }
 
+        .input-group { position: relative; }
         .input-group input {
             width: 100%;
-            padding: 12px 16px;
-            padding-right: 44px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: monospace;
+            height: 44px;
+            padding: 0 72px 0 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line-strong);
+            border-radius: 12px;
+            color: var(--fg);
+            font: 13px/1 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
-
+        .input-group input::placeholder { color: var(--fg-subtle); }
         .input-group input:focus {
-            border-color: var(--accent);
+            border-color: rgba(139, 124, 255, 0.7);
+            background: rgba(139, 124, 255, 0.05);
+            box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.15);
         }
 
         .toggle-btn {
             position: absolute;
-            right: 8px;
+            right: 6px;
             top: 50%;
             transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 6px;
-            font-size: 12px;
+            height: 30px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--fg-muted);
+            font-size: 11px;
             font-weight: 600;
-            border-radius: 6px;
-            transition: color 0.2s;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: color 0.15s, background 0.15s;
         }
+        .toggle-btn:hover { color: var(--fg); background: rgba(255, 255, 255, 0.08); }
 
-        .toggle-btn:hover {
-            color: var(--text-secondary);
-        }
+        .hint { margin-top: 8px; font-size: 12px; color: var(--fg-subtle); }
 
+        .btn-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 18px; }
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 16px;
-            transition: all 0.2s ease-out;
-            letter-spacing: 0.02em;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 152, 252, 0.2);
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(16, 152, 252, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-
-        .btn-outline {
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-outline:hover {
-            border-color: var(--danger);
-            color: var(--danger);
-            background: rgba(215, 58, 74, 0.05);
-        }
-
-        .btn-outline:active {
-            transform: scale(0.98);
-        }
-
-        .mode-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 12px;
+            height: 42px;
+            padding: 0 18px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            font: inherit;
+            font-size: 13.5px;
             font-weight: 600;
-            margin-bottom: 20px;
-            width: max-content;
+            cursor: pointer;
+            transition: filter 0.15s, transform 0.1s, background 0.15s, color 0.15s, border-color 0.15s;
         }
+        .btn:active { transform: scale(0.98); }
+        .btn:focus-visible, .toggle-btn:focus-visible { outline: 2px solid rgba(139, 124, 255, 0.8); outline-offset: 2px; }
+        .btn-primary {
+            color: white;
+            background-image: linear-gradient(135deg, #8B7CFF 0%, #6E63FF 45%, #5B8CFF 100%);
+            box-shadow: 0 8px 24px -10px rgba(139, 124, 255, 0.7);
+        }
+        .btn-primary:hover { filter: brightness(1.08); }
+        .btn-outline { color: var(--fg-muted); background: rgba(255, 255, 255, 0.03); border-color: var(--line-strong); }
+        .btn-outline:hover { color: var(--danger); border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.06); }
 
-        .mode-indicator.server {
-            background: rgba(45, 164, 78, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(45, 164, 78, 0.2);
-        }
+        .info-card { display: grid; grid-template-columns: 110px 1fr; row-gap: 0; }
+        .info-label, .info-value { padding: 11px 0; border-top: 1px solid var(--line); font-size: 13px; }
+        .info-label:first-of-type, .info-label:first-of-type + .info-value { border-top: 0; padding-top: 4px; }
+        .info-label { color: var(--fg-subtle); }
+        .info-value { color: var(--fg); }
 
-        .mode-indicator.byok {
-            background: rgba(16, 152, 252, 0.1);
-            color: var(--accent);
-            border: 1px solid rgba(16, 152, 252, 0.2);
-        }
-
-        .mode-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .mode-indicator.server .mode-dot {
-            background: var(--success);
-        }
-
-        .mode-indicator.byok .mode-dot {
-            background: var(--accent);
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-row .btn {
-            flex: 1;
-        }
+        .footer { margin-top: 28px; text-align: center; font-size: 12px; color: var(--fg-subtle); }
 
         .toast {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            padding: 14px 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
             display: none;
-            z-index: 1000;
-            animation: slide-in 0.3s ease;
-        }
-
-        .toast.success {
-            background: rgba(45, 164, 78, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(45, 164, 78, 0.3);
-        }
-
-        .toast.error {
-            background: rgba(215, 58, 74, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(215, 58, 74, 0.3);
-        }
-
-        @keyframes slide-in {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .info-card {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 12px 16px;
+            position: fixed;
+            left: 50%;
+            bottom: 28px;
+            transform: translateX(-50%);
+            padding: 11px 16px;
+            border-radius: 12px;
             font-size: 13px;
-            background: var(--bg-tertiary);
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .info-label {
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .info-value {
-            color: var(--text-primary);
             font-weight: 500;
+            backdrop-filter: blur(12px);
+            border: 1px solid;
+            box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.8);
+            animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        .toast.success { color: #A7F3D0; background: rgba(6, 46, 34, 0.85); border-color: rgba(52, 211, 153, 0.3); }
+        .toast.error { color: #FECDD3; background: rgba(64, 10, 22, 0.85); border-color: rgba(244, 63, 94, 0.35); }
+        @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="header-icon">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+    <main class="container">
+        <header class="header">
+            <svg width="48" height="48" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <defs>
+                    <linearGradient id="g" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#A99DFF" />
+                        <stop offset="0.55" stop-color="#7262FF" />
+                        <stop offset="1" stop-color="#5B8CFF" />
+                    </linearGradient>
+                </defs>
+                <rect width="32" height="32" rx="9" fill="url(#g)" />
+                <path d="M16 6.5 9 9.2v5.6c0 4.6 3 8.6 7 10.2 4-1.6 7-5.6 7-10.2V9.2L16 6.5Z" fill="rgba(255,255,255,0.14)" stroke="white" stroke-width="1.6" stroke-linejoin="round" />
+                <path d="M11.8 15.4c2.4-2.6 6-2.6 8.4 0" stroke="white" stroke-width="1.6" stroke-linecap="round" />
+                <circle cx="16" cy="16.4" r="1.9" fill="white" />
+            </svg>
+            <div>
+                <h1 data-i18n="optionsTitle">Blind-Sight Settings</h1>
+                <p data-i18n="optionsSub">Legal Firewall Setup</p>
             </div>
-            <h1 data-i18n="optionsTitle">Blind-Sight Settings</h1>
-            <p data-i18n="optionsSub">Legal Firewall Setup</p>
-        </div>
+        </header>
 
-        <div class="card">
-            <div class="card-title" data-i18n="apiKeyTitle">🔑 API Key (Optional)</div>
-            <div class="card-subtitle" data-i18n="apiKeySubtitle">Blind-Sight works perfectly without a key using our backend. Provide your own
-                OpenAI or Gemini key only if you want to bypass rate limits.</div>
+        <section class="card" aria-labelledby="key-title">
+            <h2 class="card-title" id="key-title" data-i18n="apiKeyTitle">API key (optional)</h2>
+            <p class="card-subtitle" data-i18n="apiKeySubtitle">Blind-Sight works without a key using our backend. Add your own OpenAI or Gemini key to analyze directly from your browser.</p>
 
-            <div class="mode-indicator server" id="modeIndicator">
+            <div class="mode-indicator server" id="modeIndicator" role="status">
                 <span class="mode-dot"></span>
                 <span id="modeText" data-i18n="usingServer">Using: Blind-Sight Server</span>
             </div>
 
+            <label class="field-label" for="apiKeyInput">OpenAI or Gemini key</label>
             <div class="input-group">
-                <input type="password" id="apiKeyInput" placeholder="sk-... or AIza..." />
-                <button class="toggle-btn" id="toggleBtn" title="Toggle visibility">SHOW</button>
+                <input type="password" id="apiKeyInput" placeholder="sk-… or AIza…" autocomplete="off" spellcheck="false" />
+                <button class="toggle-btn" id="toggleBtn" type="button" title="Toggle visibility">SHOW</button>
             </div>
-            <div class="btn-row">
-                <button class="btn btn-primary" id="saveBtn" data-i18n="saveKey">Save API Key</button>
-                <button class="btn btn-outline" id="clearBtn" data-i18n="clearKey">Clear Key</button>
-            </div>
-        </div>
+            <p class="hint">Stored only in this browser's local extension storage.</p>
 
-        <div class="card">
-            <div class="card-title" data-i18n="aboutTitle">ℹ️ About</div>
-            <div class="info-card">
+            <div class="btn-row">
+                <button class="btn btn-primary" id="saveBtn" type="button" data-i18n="saveKey">Save API Key</button>
+                <button class="btn btn-outline" id="clearBtn" type="button" data-i18n="clearKey">Clear Key</button>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="about-title">
+            <h2 class="card-title" id="about-title" data-i18n="aboutTitle">About</h2>
+            <div class="info-card" style="margin-top: 12px;">
                 <span class="info-label" data-i18n="versionLabel">Version</span>
-                <span class="info-value">4.0.0</span>
+                <span class="info-value" id="versionValue">—</span>
                 <span class="info-label" data-i18n="engineLabel">Engine</span>
-                <span class="info-value">GPT-4o Mini / Gemini 2.0 Flash</span>
+                <span class="info-value">Llama 3.3 70B via Groq, Gemini 2.5 Flash fallback</span>
                 <span class="info-label" data-i18n="privacyLabel">Privacy</span>
                 <span class="info-value" data-i18n="privacyDesc">Keys stay locally on your device</span>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="toast" id="toast"></div>
+        <p class="footer">Free · No account · No tracking</p>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script type="module" src="./options.ts"></script>
 </body>

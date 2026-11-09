@@ -99,5 +99,8 @@ toggleBtn.addEventListener('click', () => {
     toggleBtn.textContent = visible ? t('hide', 'HIDE') : t('show', 'SHOW');
 });
 
+const versionValue = document.getElementById('versionValue');
+if (versionValue) versionValue.textContent = chrome.runtime.getManifest().version;
+
 // Run localization
 localizeDOM();

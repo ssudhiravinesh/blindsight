@@ -1,175 +1,178 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { HistoryEntry, ScanResponse, ScanResult } from '@blindsight/core';
+import { isScanError, t } from '@blindsight/core';
+
 import Header from './components/Header';
-import StatusIndicator from './components/StatusIndicator';
-import ScanButton from './components/ScanButton';
+import ScanPanel from './components/ScanPanel';
 import ResultCard from './components/ResultCard';
-import ScanSkeleton from './components/ScanSkeleton';
+import ErrorCard from './components/ErrorCard';
 import HistorySection from './components/HistorySection';
 
-import type { ScanResponse, ScanResult, HistoryEntry, SeverityKey } from '@blindsight/core';
-import { isScanError, SEVERITY_CONFIG, t } from '@blindsight/core';
+type ViewState =
+    | { kind: 'idle' }
+    | { kind: 'scanning' }
+    | { kind: 'result'; result: ScanResult }
+    | { kind: 'error'; title: string; message: string; rateLimited: boolean };
 
+interface PageStatus {
+    isSignup?: boolean;
+    lastScanResult?: ScanResponse | null;
+    scanInProgress?: boolean;
+}
 
-type Status = 'idle' | 'scanning' | 'safe' | 'notable' | 'caution' | 'danger' | 'error' | 'ratelimited';
+const RESTRICTED_PREFIXES = ['chrome://', 'edge://', 'about:', 'chrome-extension://', 'https://chrome.google.com/webstore', 'https://chromewebstore.google.com'];
 
-function sendToContentScript(message: Record<string, unknown>): Promise<ScanResponse> {
+async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab;
+}
+
+function hostnameOf(url?: string): string | null {
+    if (!url) return null;
+    try {
+        const { hostname, protocol } = new URL(url);
+        return protocol.startsWith('http') ? hostname.replace(/^www\./, '') : null;
+    } catch {
+        return null;
+    }
+}
+
+function sendToContentScript<T>(message: Record<string, unknown>): Promise<T> {
     return new Promise((resolve, reject) => {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            const tab = tabs[0];
-            if (!tab?.id || !tab?.url) { reject(new Error(t('restrictedPageError', 'No active tab'))); return; }
-
-            // Guard against restricted pages
-            if (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('https://chrome.google.com/webstore')) {
+        getActiveTab().then((tab) => {
+            if (!tab?.id || !tab.url) {
+                reject(new Error(t('restrictedPageError', 'No active tab')));
+                return;
+            }
+            if (RESTRICTED_PREFIXES.some((p) => tab.url!.startsWith(p))) {
                 reject(new Error(t('restrictedPageError', 'Cannot scan this type of page. Please try on a regular website.')));
                 return;
             }
-
             chrome.tabs.sendMessage(tab.id, message, (response) => {
-                if (chrome.runtime.lastError) {
-                    const errorMsg = chrome.runtime.lastError.message || '';
-                    if (errorMsg.includes('Receiving end does not exist')) {
-                        reject(new Error(t('refreshPageError', 'Please refresh this page before scanning. The extension was just installed or updated.')));
-                    } else {
-                        reject(new Error(errorMsg));
-                    }
+                const err = chrome.runtime.lastError?.message;
+                if (err) {
+                    reject(new Error(
+                        err.includes('Receiving end does not exist')
+                            ? t('refreshPageError', 'Refresh this page and try again. The extension was just installed or updated.')
+                            : err,
+                    ));
                 } else {
-                    resolve(response as ScanResponse);
+                    resolve(response as T);
                 }
             });
-        });
+        }, reject);
     });
 }
 
 function loadHistory(): Promise<HistoryEntry[]> {
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({ type: 'GET_HISTORY' }, (response) => {
-            resolve((response as HistoryEntry[]) ?? []);
+            resolve(Array.isArray(response) ? (response as HistoryEntry[]) : []);
         });
     });
 }
 
+function errorState(message: string): ViewState {
+    if (message.includes('RATE_LIMITED')) {
+        return {
+            kind: 'error',
+            rateLimited: true,
+            title: t('rateLimitedTitle', 'Slow down'),
+            message: t('rateLimitedDesc', 'Too many scans in a short period. Please wait a minute and try again.'),
+        };
+    }
+    return {
+        kind: 'error',
+        rateLimited: false,
+        title: t('scanFailed', 'Scan failed'),
+        message: message || t('generalError', 'An unexpected error occurred.'),
+    };
+}
+
 export default function App() {
-    const [status, setStatus] = useState<Status>('idle');
-    const [statusMessage, setStatusMessage] = useState(t('readyToScan', 'Ready to scan'));
-    const [scanning, setScanning] = useState(false);
-    const [result, setResult] = useState<ScanResult | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [view, setView] = useState<ViewState>({ kind: 'idle' });
     const [history, setHistory] = useState<HistoryEntry[]>([]);
+    const [hostname, setHostname] = useState<string | null>(null);
+    const [isSignupPage, setIsSignupPage] = useState(false);
+    const [version, setVersion] = useState('');
 
     const handleScan = useCallback(async () => {
-        setStatus('scanning');
-        setStatusMessage(t('scanning', 'Analyzing Terms of Service...'));
-        setScanning(true);
-        setResult(null);
-        setErrorMessage(null);
-
+        setView({ kind: 'scanning' });
         try {
-            const response = await sendToContentScript({ type: 'MANUAL_SCAN' });
-
+            const response = await sendToContentScript<ScanResponse>({ type: 'MANUAL_SCAN' });
             if (isScanError(response)) {
-                if (response.error === 'RATE_LIMITED') {
-                    setStatus('ratelimited');
-                    setStatusMessage(t('rateLimitedTitle', 'Slow down'));
-                    setErrorMessage(t('rateLimitedDesc', 'Too many scans in a short period. Please wait a minute and try again.'));
-                } else {
-                    setStatus('error');
-                    setStatusMessage(t('scanFailed', 'Scan failed'));
-                    setErrorMessage(response.error);
-                }
+                setView(errorState(response.error));
             } else {
-                const scanResult = response as ScanResult;
-                const severity = scanResult.overallSeverity ?? 0;
-                const config = SEVERITY_CONFIG[severity as SeverityKey];
+                const result = { ...response, hostname: hostnameOf((await getActiveTab())?.url) ?? response.hostname };
+                setView({ kind: 'result', result });
 
-                // Attach hostname so ResultCard can resolve domain-based alternatives
-                const tabs = await new Promise<chrome.tabs.Tab[]>((resolve) =>
-                    chrome.tabs.query({ active: true, currentWindow: true }, resolve)
-                );
-                const activeTab = tabs[0];
-                if (activeTab?.url) {
-                    try { scanResult.hostname = new URL(activeTab.url).hostname.replace(/^www\./, ''); } catch { }
-                }
-
-                setResult(scanResult);
-                setStatus(config.status as Status);
-                setStatusMessage(t(config.titleKey || 'readyToScan', config.name));
-
-                if (severity >= 2) {
+                if (result.overallSeverity >= 2) {
                     sendToContentScript({
                         type: 'SHOW_WARNING',
-                        clauses: scanResult.clauses,
-                        severity: severity,
-                        category: scanResult.category,
-                        serviceName: scanResult.serviceName,
-                        hostname: scanResult.hostname,
-                        aiAlternatives: scanResult.aiAlternatives,
-                    }).catch(console.error);
+                        clauses: result.clauses,
+                        severity: result.overallSeverity,
+                        category: result.category,
+                        serviceName: result.serviceName,
+                        hostname: result.hostname,
+                        aiAlternatives: result.aiAlternatives,
+                    }).catch(() => undefined);
                 }
             }
-
-            const h = await loadHistory();
-            setHistory(h);
         } catch (error) {
-            const errStr = (error as Error).message || '';
-            if (errStr.includes('RATE_LIMITED')) {
-                setStatus('ratelimited');
-                setStatusMessage(t('rateLimitedTitle', 'Slow down'));
-                setErrorMessage(t('rateLimitedDesc', 'Too many scans in a short period. Please wait a minute and try again.'));
-            } else {
-                setStatus('error');
-                setStatusMessage(t('scanFailed', 'Scan failed'));
-                setErrorMessage(errStr || t('generalError', 'An unexpected error occurred.'));
-            }
+            setView(errorState((error as Error).message));
         } finally {
-            setScanning(false);
+            setHistory(await loadHistory());
         }
     }, []);
 
     useEffect(() => {
-        (async () => {
-            const h = await loadHistory();
-            setHistory(h);
+        setVersion(chrome.runtime.getManifest?.().version ?? '');
+        void (async () => {
+            const tab = await getActiveTab();
+            setHostname(hostnameOf(tab?.url));
+            setHistory(await loadHistory());
 
-            const sessionData = await chrome.storage.session.get(['autoScan']);
-            if (sessionData.autoScan) {
+            const session = await chrome.storage.session.get(['autoScan']);
+            if (session.autoScan) {
                 await chrome.storage.session.remove(['autoScan']);
-                handleScan();
+                void handleScan();
+                return;
+            }
+
+            // Restore the last result for this tab so reopening the popup doesn't lose it.
+            try {
+                const status = await sendToContentScript<PageStatus>({ type: 'GET_PAGE_STATUS' });
+                setIsSignupPage(Boolean(status?.isSignup));
+                if (status?.lastScanResult && !isScanError(status.lastScanResult)) {
+                    setView({ kind: 'result', result: { ...status.lastScanResult, hostname: hostnameOf(tab?.url) ?? undefined } });
+                } else if (status?.scanInProgress) {
+                    setView({ kind: 'scanning' });
+                }
+            } catch {
+                // Restricted page or content script not injected yet: stay idle.
             }
         })();
     }, [handleScan]);
 
     return (
-        <div className="flex flex-col min-h-[500px]">
-            <Header />
+        <div className="flex min-h-[520px] flex-col">
+            <Header hostname={hostname} isSignupPage={isSignupPage} />
 
-            <div className="flex-1 p-4 flex flex-col gap-4">
-                <StatusIndicator status={status} message={statusMessage} />
-
-                <ScanButton onClick={handleScan} scanning={scanning} disabled={scanning} />
-
-                {scanning && <div className="animate-fade-in"><ScanSkeleton /></div>}
-
-                {!scanning && result && <ResultCard result={result} />}
-
-                {errorMessage && !result && (
-                    <div className="border border-bs-danger bg-[#D73A4A10] rounded-lg p-3 animate-slide-in">
-                        <div className="flex items-start gap-3">
-                            <span className="text-lg">❌</span>
-                            <div>
-                                <h3 className="font-bold text-sm text-bs-danger mb-0.5 tracking-wide">{status === 'ratelimited' ? t('rateLimitedTitle', 'Slow down') : t('scanFailed', 'Scan Failed')}</h3>
-                                <p className="text-xs text-bs-danger/80">{errorMessage}</p>
-                            </div>
-                        </div>
-                    </div>
+            <main className="flex flex-1 flex-col gap-4 p-4">
+                {view.kind === 'result' ? (
+                    <ResultCard result={view.result} onRescan={handleScan} />
+                ) : view.kind === 'error' ? (
+                    <ErrorCard title={view.title} message={view.message} rateLimited={view.rateLimited} onRetry={handleScan} />
+                ) : (
+                    <ScanPanel scanning={view.kind === 'scanning'} onScan={handleScan} />
                 )}
 
                 <HistorySection entries={history} />
-            </div>
+            </main>
 
-            <footer className="p-3 text-center border-t border-bs-border">
-                <p className="text-[10px] text-bs-text-muted">
-                    Blind-Sight v4.0 — Your Legal Firewall
-                </p>
+            <footer className="flex items-center justify-between border-t border-line px-4 py-2.5 text-2xs text-fg-subtle">
+                <span>Free · No account · No tracking</span>
+                {version && <span className="font-mono">v{version}</span>}
             </footer>
         </div>
     );
