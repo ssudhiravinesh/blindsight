@@ -119,10 +119,10 @@ async function promptAndScanIfSignup(): Promise<void> {
     if (!detection.isSignup) return;
 
     attachAgreementListeners(() => {
-        console.log('[Blind-Sight] User clicked agreement button. Tracking ToS...');
         chrome.runtime.sendMessage({
             type: 'TRACK_TOS_AGREEMENT',
-            domain: window.location.hostname.replace('www.', '')
+            domain: window.location.hostname.replace(/^www\./, ''),
+            tosUrl: getTosLinkForBackgroundFetch()?.url,
         });
     });
 

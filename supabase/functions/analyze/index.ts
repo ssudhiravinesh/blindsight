@@ -1,10 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { HttpError, clientIp, handler, json, readJsonBody, requireMethod } from "../_shared/http.ts";
+import { authenticateDevice } from "../_shared/auth.ts";
+import { enforceRateLimits } from "../_shared/rate-limit.ts";
+import { serviceClient } from "../_shared/supabase.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Matches the client-side truncation; anything longer is rejected outright.
+const MAX_TOS_CHARS = 30_000;
+const MAX_BODY_BYTES = 256 * 1024;
+const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const SYSTEM_PROMPT = `You are an expert legal document analyzer specializing in Terms of Service (ToS) and Privacy Policy agreements. Your task is to meticulously analyze the provided text, identify concerning clauses, and classify the overall document into one of four severity tiers (0 through 3). Your analysis must be driven purely by the SUBSTANCE and BEHAVIOR described in the legal text, not by brand recognition, company size, or reputation.
 
@@ -242,219 +244,172 @@ async function callGemini(apiKey: string, tosText: string): Promise<string> {
   return content;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+Deno.serve(handler(async (req) => {
+  requireMethod(req, "POST");
+  const supabase = serviceClient();
+  const user = await authenticateDevice(req, supabase);
+
+  await enforceRateLimits(supabase, [
+    { name: "analyze:device", subject: user.deviceId, limit: 20, windowSeconds: 600 },
+    { name: "analyze:ip", subject: clientIp(req), limit: 60, windowSeconds: 600 },
+  ]);
+
+  const body = await readJsonBody(req, MAX_BODY_BYTES);
+  const tosText = typeof body.tos_text === "string" ? body.tos_text : "";
+  const domain = typeof body.domain === "string" ? body.domain.toLowerCase().replace(/^www\./, "") : "";
+
+  if (tosText.trim().length < 100) throw new HttpError(400, "tos_text is missing or too short");
+  if (tosText.length > MAX_TOS_CHARS) throw new HttpError(413, `tos_text exceeds ${MAX_TOS_CHARS} characters`);
+  if (!HOSTNAME_RE.test(domain)) throw new HttpError(400, "domain must be a valid hostname");
+
+  const startTime = Date.now();
+
+  const normalized = normalizeToS(tosText);
+  const hash = await hashToS(normalized);
+
+  const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
+  const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
+
+  let cacheHit = false;
+  let analysisResult: Record<string, any> | null = null;
+  let cacheSource = "none";
+
+  // Hot cache (Upstash Redis)
+  if (redisUrl && redisToken) {
+    try {
+      const res = await fetch(`${redisUrl}/get/${hash}`, {
+        headers: { Authorization: `Bearer ${redisToken}` },
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        const cached = await res.json();
+        if (cached.result) {
+          analysisResult = JSON.parse(cached.result);
+          cacheHit = true;
+          cacheSource = "hot_redis";
+        }
+      }
+    } catch (err) {
+      console.error("Hot cache lookup failed:", (err as Error).message);
+    }
   }
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  // Cold cache (Postgres)
+  if (!cacheHit) {
+    const { data: dbCache, error: dbCacheError } = await supabase
+      .from("tos_cache")
+      .select("id, analysis_result")
+      .eq("tos_hash", hash)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
 
-    const body = await req.json();
-    const { tos_text, domain, device_id } = body;
+    if (!dbCacheError && dbCache) {
+      analysisResult = dbCache.analysis_result;
+      cacheHit = true;
+      cacheSource = "cold_postgres";
 
-    if (!tos_text || !domain || !device_id) {
-      return new Response(JSON.stringify({ error: "Missing required parameters: tos_text, domain, or device_id" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+      if (redisUrl && redisToken && analysisResult) {
+        fetch(`${redisUrl}/set/${hash}?EX=2592000`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${redisToken}` },
+          body: JSON.stringify(analysisResult),
+        }).catch((e) => console.error("Failed to populate hot cache:", (e as Error).message));
+      }
+
+      // PostgrestBuilder is a thenable without .catch(); calling .catch() threw a
+      // TypeError that turned every cold-cache hit into an error response.
+      supabase.rpc("increment_cache_hit", { row_id: dbCache.id }).then(({ error }) => {
+        if (error) console.error("Failed to increment cache hit:", error.message);
       });
     }
+  }
 
-    const startTime = Date.now();
+  let modelUsed = "cache";
 
-    // 1. User Resolution
-    const { data: user, error: userError } = await supabase
-      .from("anon_users")
-      .select("id")
-      .eq("device_id", device_id)
-      .single();
+  if (!cacheHit) {
+    let responseText = "";
+    const groqKey = Deno.env.get("GROQ_API_KEY");
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
 
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Device not registered" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
-    // 2. Normalization & Hashing
-    const normalized = normalizeToS(tos_text);
-    const hash = await hashToS(normalized);
-
-    // Cache config
-    const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
-    const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
-    
-    let cacheHit = false;
-    let analysisResult: Record<string, any> | null = null;
-    let cacheSource = "none";
-
-    // 3. Hot Cache Check (Upstash Redis)
-    if (redisUrl && redisToken) {
+    try {
+      if (!groqKey) throw new Error("Groq API key not configured");
+      responseText = await callGroq(groqKey, normalized);
+      modelUsed = "groq_llama-3.3-70b";
+    } catch (groqError) {
+      console.warn("Groq failed, falling back to Gemini:", (groqError as Error).message);
       try {
-        const res = await fetch(`${redisUrl}/get/${hash}`, {
-          headers: { Authorization: `Bearer ${redisToken}` }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.result) {
-            analysisResult = JSON.parse(json.result);
-            cacheHit = true;
-            cacheSource = "hot_redis";
-          }
-        }
-      } catch (err) {
-        console.error("Hot cache lookup failed:", err);
+        if (!geminiKey) throw new Error("Gemini API key not configured");
+        responseText = await callGemini(geminiKey, normalized);
+        modelUsed = "gemini-2.5-flash";
+      } catch (geminiError) {
+        console.error("Gemini fallback failed:", (geminiError as Error).message);
+        throw new HttpError(502, "Analysis providers are unavailable. Please try again later.");
       }
     }
 
-    // 4. Cold Cache Check (Supabase Database)
-    if (!cacheHit) {
-      const { data: dbCache, error: dbCacheError } = await supabase
+    try {
+      analysisResult = parseLLMResponse(responseText);
+    } catch (parseError) {
+      console.error("LLM returned invalid JSON:", (parseError as Error).message);
+      throw new HttpError(502, "Analysis provider returned an invalid response");
+    }
+
+    if (analysisResult) {
+      const severity = typeof analysisResult.overallSeverity === "number" ? analysisResult.overallSeverity : 0;
+      const { error: insertError } = await supabase
         .from("tos_cache")
-        .select("id, analysis_result, overall_severity")
-        .eq("tos_hash", hash)
-        .maybeSingle();
+        .upsert({
+          tos_hash: hash,
+          domain,
+          service_name: analysisResult.serviceName || domain,
+          analysis_result: analysisResult,
+          overall_severity: severity,
+          clause_count: Array.isArray(analysisResult.clauses) ? analysisResult.clauses.length : 0,
+          tos_length: normalized.length,
+          model_used: modelUsed,
+          prompt_version: "v3",
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        }, { onConflict: "tos_hash" });
+      if (insertError) console.error("Failed to write to cold cache:", insertError.message);
 
-      if (!dbCacheError && dbCache) {
-        analysisResult = dbCache.analysis_result;
-        cacheHit = true;
-        cacheSource = "cold_postgres";
-
-        // populate hot cache asynchronously
-        if (redisUrl && redisToken && analysisResult) {
-          fetch(`${redisUrl}/set/${hash}?EX=2592000`, {
+      if (redisUrl && redisToken) {
+        try {
+          await fetch(`${redisUrl}/set/${hash}?EX=2592000`, {
             method: "POST",
             headers: { Authorization: `Bearer ${redisToken}` },
-            body: JSON.stringify(analysisResult)
-          }).catch((e) => console.error("Failed to populate hot cache asynchronously:", e));
-        }
-
-        // Increment cache hit count
-        supabase.rpc("increment_cache_hit", { row_id: dbCache.id }).catch(() => {});
-      }
-    }
-
-    let modelUsed = "cache";
-
-    // 5. Cache Miss - Analyze using LLM
-    if (!cacheHit) {
-      let responseText = "";
-      const groqKey = Deno.env.get("GROQ_API_KEY");
-      const geminiKey = Deno.env.get("GEMINI_API_KEY");
-
-      try {
-        if (!groqKey) throw new Error("Groq API key not configured");
-        responseText = await callGroq(groqKey, normalized);
-        modelUsed = "groq_llama-3.3-70b";
-      } catch (groqError) {
-        console.warn("Groq failed, falling back to Gemini:", (groqError as Error).message);
-        
-        try {
-          if (!geminiKey) throw new Error("Gemini API key not configured");
-          responseText = await callGemini(geminiKey, normalized);
-          modelUsed = "gemini-2.5-flash";
-        } catch (geminiError) {
-          console.error("Gemini fallback failed:", geminiError);
-          throw new Error(`LLM analysis failed. Primary: ${(groqError as Error).message}. Fallback: ${(geminiError as Error).message}`);
-        }
-      }
-
-      try {
-        analysisResult = parseLLMResponse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse JSON response from LLM:", responseText);
-        throw new Error(`Analysis Failed: Invalid JSON returned by LLM. Parse error: ${(parseError as Error).message}`);
-      }
-
-      // Write results to hot & cold caches
-      if (analysisResult) {
-        const severity = typeof analysisResult.overallSeverity === "number" ? analysisResult.overallSeverity : 0;
-        
-        // Cold Cache Write
-        const { error: insertError } = await supabase
-          .from("tos_cache")
-          .insert({
-            tos_hash: hash,
-            domain: domain.toLowerCase().replace("www.", ""),
-            service_name: analysisResult.serviceName || domain,
-            analysis_result: analysisResult,
-            overall_severity: severity,
-            clause_count: Array.isArray(analysisResult.clauses) ? analysisResult.clauses.length : 0,
-            tos_length: normalized.length,
-            model_used: modelUsed,
-            prompt_version: "v3"
+            body: JSON.stringify(analysisResult),
+            signal: AbortSignal.timeout(2000),
           });
-
-        if (insertError) {
-          console.error("Failed to write to cold cache:", insertError);
-        }
-
-        // Hot Cache Write (Upstash Redis, TTL 30 days)
-        if (redisUrl && redisToken) {
-          try {
-            await fetch(`${redisUrl}/set/${hash}?EX=2592000`, {
-              method: "POST",
-              headers: { Authorization: `Bearer ${redisToken}` },
-              body: JSON.stringify(analysisResult)
-            });
-          } catch (redisError) {
-            console.error("Failed to write to hot cache:", redisError);
-          }
+        } catch (redisError) {
+          console.error("Failed to write to hot cache:", (redisError as Error).message);
         }
       }
     }
-
-    const duration = Date.now() - startTime;
-
-    // 6. Record activity
-    const { error: activityError } = await supabase
-      .from("anon_users")
-      .update({ last_active_at: new Date().toISOString() })
-      .eq("id", user.id);
-
-    if (activityError) {
-      console.error("Failed to update user activity:", activityError);
-    }
-
-    // 7. Log scan to audit logs
-    const severity = typeof analysisResult?.overallSeverity === "number" ? analysisResult.overallSeverity : 0;
-    const { error: logError } = await supabase
-      .from("scan_log")
-      .insert({
-        user_id: user.id,
-        tos_hash: hash,
-        domain: domain.toLowerCase().replace("www.", ""),
-        cache_hit: cacheHit,
-        severity: severity,
-        model_used: modelUsed,
-        latency_ms: duration
-      });
-
-    if (logError) {
-      console.error("Failed to write to scan log:", logError);
-    }
-
-    return new Response(
-      JSON.stringify({
-        analysis_result: analysisResult,
-        cache_hit: cacheHit,
-        cache_source: cacheSource,
-        overallSeverity: severity,
-        scanDurationMs: duration
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error("Analyze request error:", error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
   }
-});
+
+  const duration = Date.now() - startTime;
+  const severity = typeof analysisResult?.overallSeverity === "number" ? analysisResult.overallSeverity : 0;
+
+  const [{ error: activityError }, { error: logError }] = await Promise.all([
+    supabase.from("anon_users").update({ last_active_at: new Date().toISOString() }).eq("id", user.id),
+    supabase.from("scan_log").insert({
+      user_id: user.id,
+      tos_hash: hash,
+      domain,
+      cache_hit: cacheHit,
+      severity,
+      model_used: modelUsed,
+      latency_ms: duration,
+    }),
+  ]);
+  if (activityError) console.error("Failed to update user activity:", activityError.message);
+  if (logError) console.error("Failed to write to scan log:", logError.message);
+
+  return json(req, {
+    analysis_result: analysisResult,
+    cache_hit: cacheHit,
+    cache_source: cacheSource,
+    overallSeverity: severity,
+    scanDurationMs: duration,
+  });
+}));

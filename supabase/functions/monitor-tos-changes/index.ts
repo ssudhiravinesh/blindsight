@@ -1,16 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as Sentry from "npm:@sentry/deno";
+import * as Sentry from "@sentry/deno";
+import { handler, json, requireMethod } from "../_shared/http.ts";
+import { requireCronSecret } from "../_shared/auth.ts";
+import { serviceClient } from "../_shared/supabase.ts";
 
 Sentry.init({
-  dsn: "https://e1d7dfbc3ed3a73508c997ecef2e7571@o4511585627406336.ingest.us.sentry.io/4511585640906752",
-  tracesSampleRate: 1.0,
+  dsn: Deno.env.get("SENTRY_DSN"),
+  enabled: Boolean(Deno.env.get("SENTRY_DSN")),
+  tracesSampleRate: 0.1,
 });
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const SYSTEM_PROMPT = `You are an expert legal document analyzer specializing in Terms of Service (ToS) and Privacy Policy agreements. Your task is to meticulously analyze the provided text, identify concerning clauses, and classify the overall document into one of four severity tiers (0 through 3). Your analysis must be driven purely by the SUBSTANCE and BEHAVIOR described in the legal text, not by brand recognition, company size, or reputation.
 
@@ -162,15 +159,14 @@ async function callGemini(apiKey: string, tosText: string): Promise<string> {
   return content;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+// Triggered only by pg_cron, which presents the shared CRON_SECRET. Without
+// this guard anyone could force a full crawl + LLM re-analysis on our budget.
+Deno.serve(handler(async (req) => {
+  requireMethod(req, "POST");
+  requireCronSecret(req);
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = serviceClient();
 
     // Get all unique domains tracked by users
     const { data: monitoredDomains, error: dbError } = await supabase
@@ -187,10 +183,7 @@ serve(async (req) => {
     };
 
     if (!monitoredDomains || monitoredDomains.length === 0) {
-      return new Response(JSON.stringify({ message: "No tracked domains to monitor", results }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return json(req, { message: "No tracked domains to monitor", results });
     }
 
     const groqKey = Deno.env.get("GROQ_API_KEY") ?? "";
@@ -339,15 +332,9 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ message: "Monitoring cycle completed", results }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json(req, { message: "Monitoring cycle completed", results });
   } catch (error) {
     Sentry.captureException(error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    throw error;
   }
-});
+}));

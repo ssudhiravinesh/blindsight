@@ -96,7 +96,7 @@ openai_api_key = "env(OPENAI_API_KEY)"
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
 # are monitored, and you can view the emails that would have been sent from the web interface.
-[inbucket]
+[local_smtp]
 enabled = false
 # Port to use for the email testing server web interface.
 port = 54324
@@ -393,3 +393,33 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+[functions.analyze]
+# Auth is enforced in-function (device secret / cron secret), not via Supabase JWTs.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.get-notifications]
+# Auth is enforced in-function (device secret / cron secret), not via Supabase JWTs.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.health]
+# Auth is enforced in-function (device secret / cron secret), not via Supabase JWTs.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.monitor-tos-changes]
+# Auth is enforced in-function (device secret / cron secret), not via Supabase JWTs.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.register-device]
+# Auth is enforced in-function (device secret / cron secret), not via Supabase JWTs.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.track-service]
+# Auth is enforced in-function (device secret / cron secret), not via Supabase JWTs.
+verify_jwt = false
+import_map = "./functions/deno.json"

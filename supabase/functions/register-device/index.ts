@@ -1,51 +1,27 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { clientIp, handler, json, requireMethod } from "../_shared/http.ts";
+import { randomToken, sha256Hex } from "../_shared/crypto.ts";
+import { enforceRateLimits } from "../_shared/rate-limit.ts";
+import { serviceClient } from "../_shared/supabase.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+/**
+ * Issues an anonymous device credential. The secret is returned exactly once;
+ * the database keeps only its SHA-256.
+ */
+Deno.serve(handler(async (req) => {
+  requireMethod(req, "POST");
+  const supabase = serviceClient();
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  await enforceRateLimits(supabase, [
+    { name: "register:ip", subject: clientIp(req), limit: 10, windowSeconds: 3600 },
+  ]);
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const deviceId = crypto.randomUUID();
+  const deviceSecret = randomToken(32);
 
-    const deviceId = crypto.randomUUID();
+  const { error } = await supabase
+    .from("anon_users")
+    .insert({ device_id: deviceId, secret_hash: await sha256Hex(deviceSecret) });
+  if (error) throw error;
 
-    const { data, error } = await supabase
-      .from("anon_users")
-      .insert({ device_id: deviceId })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        device_id: data.device_id,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error("Failed to register device:", error);
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
-    );
-  }
-});
+  return json(req, { device_id: deviceId, device_secret: deviceSecret }, 201);
+}));

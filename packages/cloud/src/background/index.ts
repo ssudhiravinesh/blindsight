@@ -7,41 +7,50 @@
 import * as Sentry from '@sentry/browser';
 import {
     analyzeTOSWithUserKey,
-    analyzeTOSviaServer,
+    analyzeOnServer,
+    ApiError,
+    fetchNotifications,
     getApiKey,
     normalizeToS,
     hashToS,
     getCachedScanResult,
-    setCachedScanResult
+    registerDevice,
+    setCachedScanResult,
+    severityToGrade,
+    trackService,
 } from '@blindsight/core';
-import type { HistoryEntry, ScanResult, SeverityKey } from '@blindsight/core';
+import type { DeviceCredentials, HistoryEntry, ScanResult, SeverityKey } from '@blindsight/core';
 
-const SUPABASE_FUNCTIONS_URL = 'https://ywwlgayxhothmtvsbwlg.supabase.co/functions/v1';
+const DEVICE_STORAGE_KEY = 'deviceCredentials';
+let registrationInFlight: Promise<DeviceCredentials> | null = null;
 
-async function getOrCreateDeviceId(): Promise<string | null> {
-    try {
-        const data = await chrome.storage.local.get(['device_id']);
-        if (data.device_id) return data.device_id as string;
-
-        console.log('[Blind-Sight BG] Registering new device ID...');
-        const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/register-device`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-            const resJson = await response.json();
-            if (resJson.device_id) {
-                await chrome.storage.local.set({ device_id: resJson.device_id });
-                return resJson.device_id;
-            }
-        } else {
-            console.error('[Blind-Sight BG] Register device endpoint failed:', response.status);
-        }
-    } catch (err) {
-        console.error('[Blind-Sight BG] Failed to register device dynamically:', err);
+async function getDeviceCredentials(forceNew = false): Promise<DeviceCredentials> {
+    if (!forceNew) {
+        const data = await chrome.storage.local.get([DEVICE_STORAGE_KEY]);
+        const stored = data[DEVICE_STORAGE_KEY] as DeviceCredentials | undefined;
+        if (stored?.deviceId && stored?.deviceSecret) return stored;
     }
-    return null;
+    // Deduplicate concurrent registrations (several tabs scanning at once).
+    registrationInFlight ??= registerDevice()
+        .then(async (creds) => {
+            await chrome.storage.local.set({ [DEVICE_STORAGE_KEY]: creds });
+            await chrome.storage.local.remove(['device_id', 'user_tier']); // legacy keys
+            return creds;
+        })
+        .finally(() => { registrationInFlight = null; });
+    return registrationInFlight;
+}
+
+/** Runs an authenticated call, re-registering once if the server rejects stale credentials. */
+async function withDevice<T>(fn: (creds: DeviceCredentials) => Promise<T>): Promise<T> {
+    try {
+        return await fn(await getDeviceCredentials());
+    } catch (err) {
+        if (err instanceof ApiError && err.code === 'UNAUTHORIZED') {
+            return fn(await getDeviceCredentials(true));
+        }
+        throw err;
+    }
 }
 
 Sentry.init({
@@ -246,17 +255,15 @@ async function handleAnalyzeTOS(
             return cached;
         }
 
-        // 2. Fetch/Register device_id (used for abuse rate limiting and tracking)
-        const deviceId = await getOrCreateDeviceId();
-
+        // 2. Analyze via the Blind-Sight backend (device-authenticated)
         let result: ScanResult | null = null;
         let serverError: string | null = null;
 
         try {
-            result = await analyzeTOSviaServer(tosText, sender.tab?.url, deviceId || undefined);
+            result = await withDevice((creds) => analyzeOnServer(creds, tosText, sender.tab?.url));
         } catch (error) {
             serverError = (error as Error).message;
-            if (serverError === 'RATE_LIMITED') {
+            if (error instanceof ApiError && error.code === 'RATE_LIMITED') {
                 setBadge('error', tabId);
                 return { error: 'RATE_LIMITED' };
             }
@@ -298,86 +305,41 @@ async function handleAnalyzeTOS(
 }
 
 const UPDATE_CHECK_ALARM = 'tos-update-check';
-// @ts-ignore
-const env = (typeof import.meta !== 'undefined' && import.meta.env) || (typeof process !== 'undefined' && process.env) || {};
-const SYNDICATE_BASE_URL = env.VITE_VITE_SYNDICATE_SERVER_URL || env.VITE_SYNDICATE_SERVER_URL 
-    ? (env.VITE_VITE_SYNDICATE_SERVER_URL || env.VITE_SYNDICATE_SERVER_URL).replace('/analyze', '') 
-    : 'https://api.blindsight.ai/api/v1/tos';
+// The server crawls tracked services nightly; polling a few times a day is enough.
+const UPDATE_CHECK_PERIOD_MINUTES = 360;
 
-
-async function trackTosDomain(domain: string, version: string): Promise<void> {
-    const data = await chrome.storage.local.get(['trackedTos']);
-    const trackedTos: Record<string, string> = data.trackedTos ?? {};
-
-    trackedTos[domain] = version;
-    await chrome.storage.local.set({ trackedTos });
-
-}
-
-async function checkForTosUpdates() {
-
+/**
+ * Pulls ToS-change notifications produced by the server-side crawler
+ * (monitor-tos-changes) for services this device tracks.
+ */
+async function checkForTosUpdates(): Promise<void> {
     try {
-        const response = await fetch(`${SYNDICATE_BASE_URL}/updates`);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        const data = await chrome.storage.local.get([DEVICE_STORAGE_KEY]);
+        if (!data[DEVICE_STORAGE_KEY]) return; // nothing tracked yet
 
-        const latestVersions: Record<string, { version: string, url: string }> = await response.json();
-        const data = await chrome.storage.local.get(['trackedTos']);
-        const trackedTos: Record<string, string> = data.trackedTos ?? {};
+        const notifications = await withDevice(fetchNotifications);
+        for (const n of notifications) {
+            const service = n.service_name || n.domain;
+            const newSeverity = (n.new_severity ?? 0) as SeverityKey;
+            const escalated = n.old_severity !== null && newSeverity > (n.old_severity ?? 0);
 
-        let updatesFound = 0;
-
-        for (const [domain, localVersion] of Object.entries(trackedTos)) {
-            const remoteData = latestVersions[domain];
-            if (remoteData && remoteData.version !== localVersion) {
-
-                const fetchResult = await fetchTosContent(remoteData.url);
-                if (fetchResult.success && fetchResult.text) {
-                    try {
-                        const scanResult = await analyzeTOSviaServer(fetchResult.text, domain);
-                        const severity = scanResult.overallSeverity ?? 0;
-
-                        let title = 'Terms of Service Update';
-                        let message = `The Terms of Service for ${domain} have changed.`;
-
-                        if (severity >= 2) {
-                            title = '⚠️ Critical ToS Update';
-                            message = `${domain} has added concerning new terms to their agreement!`;
-                        } else {
-                            title = 'ℹ️ Minor ToS Update';
-                            message = `${domain} updated their terms. No major red flags detected.`;
-                        }
-
-                        chrome.notifications.create({
-                            type: 'basic',
-                            iconUrl: chrome.runtime.getURL('src/assets/icon-128.png'),
-                            title,
-                            message,
-                            priority: severity >= 2 ? 2 : 0
-                        });
-
-                        trackedTos[domain] = remoteData.version;
-                        updatesFound++;
-                    } catch (err) {
-                        console.error(`[Blind-Sight BG] Failed to analyze updated ToS for ${domain}:`, err);
-                    }
-                } else {
-                    console.error(`[Blind-Sight BG] Failed to fetch ToS content from ${remoteData.url}:`, fetchResult.error);
-                }
-            }
+            chrome.notifications.create(`tos-update-${n.id}`, {
+                type: 'basic',
+                iconUrl: chrome.runtime.getURL('src/assets/icon-128.png'),
+                title: newSeverity >= 2 ? `⚠️ ${service} changed its terms` : `ℹ️ ${service} updated its terms`,
+                message: escalated
+                    ? `Grade ${severityToGrade((n.old_severity ?? 0) as SeverityKey)} → ${severityToGrade(newSeverity)}. ${n.change_summary ?? ''}`.trim()
+                    : n.change_summary ?? 'Terms of Service updated.',
+                priority: newSeverity >= 2 ? 2 : 0,
+            });
         }
-
-        if (updatesFound > 0) {
-            await chrome.storage.local.set({ trackedTos });
-        }
-
     } catch (error) {
-        console.error('[Blind-Sight BG] Failed to check for ToS updates:', error);
+        console.error('[Blind-Sight BG] Failed to check for ToS updates:', (error as Error).message);
     }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: 5 });
-    checkForTosUpdates();
+    chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: UPDATE_CHECK_PERIOD_MINUTES });
 
     // Create context menu
     chrome.contextMenus.create({
@@ -430,35 +392,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 .catch((error) => sendResponse({ success: false, error: (error as Error).message }));
             return true;
 
-        case 'TRACK_TOS_AGREEMENT':
-            if (request.domain) {
-                fetch(`${SYNDICATE_BASE_URL}/version?domain=${encodeURIComponent(request.domain)}`)
-                    .then((res) => res.json())
-                    .then((data) => {
-                        if (data.version) {
-                            trackTosDomain(request.domain, data.version);
-                        }
-                    })
-                    .catch((err) => console.error('[Blind-Sight BG] Failed to fetch current ToS version:', err));
-
-                sendResponse({ success: true, tracking: true });
-                return false;
-            }
+        case 'TRACK_TOS_AGREEMENT': {
+            // The user accepted this service's terms: ask the server to watch them.
+            const domain = typeof request.domain === 'string' ? request.domain : '';
+            const tosUrl = typeof request.tosUrl === 'string' ? request.tosUrl : undefined;
+            if (!domain) return false;
+            withDevice((creds) => trackService(creds, domain, tosUrl))
+                .catch((err) => console.error('[Blind-Sight BG] Failed to track service:', (err as Error).message));
+            sendResponse({ success: true, tracking: true });
             return false;
-
-        case 'TRACK_TOS':
-            if (request.domain && request.version) {
-                trackTosDomain(request.domain, request.version)
-                    .then(() => sendResponse({ success: true }))
-                    .catch((error) => sendResponse({ success: false, error: (error as Error).message }));
-                return true;
-            }
-            return false;
-
-        case 'TEST_ALARM':
-            checkForTosUpdates();
-            sendResponse({ success: true });
-            return false;
+        }
 
         case 'GET_LAST_RESULT': {
             const tabId = sender.tab?.id;
@@ -492,9 +435,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
     chrome.storage.session.remove([`result_${tabId}`, `detected_${tabId}`]);
 });
-
-// Expose for hackathon manual testing in the console
-(self as any).testUpdateCheck = () => {
-    console.log('[Blind-Sight BG] Manually triggering ToS update check...');
-    checkForTosUpdates();
-};

@@ -7,6 +7,7 @@
 export * from './types';
 export * from './storage';
 export * from './openai';
+export * from './api';
 export * from './alternatives';
 export * from './detector';
 export * from './extractor';

@@ -9,14 +9,9 @@ import type { ApiProvider } from './storage';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-// @ts-ignore
-const env = (typeof import.meta !== 'undefined' && import.meta.env) || (typeof process !== 'undefined' && process.env) || {};
-const SYNDICATE_API_KEY = env.VITE_SYNDICATE_API_KEY || '';
-const SYNDICATE_SERVER_URL = env.VITE_VITE_SYNDICATE_SERVER_URL || env.VITE_SYNDICATE_SERVER_URL || 'https://ywwlgayxhothmtvsbwlg.supabase.co/functions/v1/analyze';
-
-
-const MAX_TOS_LENGTH = 30000;
+/** Matches the backend limit (analyze rejects longer bodies). */
+export const MAX_TOS_LENGTH = 30000;
+const TRUNCATION_NOTE = '\n\n[Text truncated due to length...]';
 
 const SYSTEM_PROMPT = `You are an expert legal document analyzer specializing in Terms of Service (ToS) and Privacy Policy agreements. Your task is to meticulously analyze the provided text, identify concerning clauses, and classify the overall document into one of four severity tiers (0 through 3). Your analysis must be driven purely by the SUBSTANCE and BEHAVIOR described in the legal text, not by brand recognition, company size, or reputation.
 
@@ -323,12 +318,12 @@ NOTE ON suggestedAlternatives:
 
 If terms are standard with no concerns: {"overallSeverity": 0, "category": "...", "serviceName": "...", "summary": "Standard terms...", "clauses": []}`;
 
-function truncateText(text: string): string {
+export function truncateText(text: string): string {
     if (text.length <= MAX_TOS_LENGTH) return text;
-    return text.substring(0, MAX_TOS_LENGTH) + '\n\n[Text truncated due to length...]';
+    return text.substring(0, MAX_TOS_LENGTH - TRUNCATION_NOTE.length) + TRUNCATION_NOTE;
 }
 
-function parseResponse(responseText: string): ScanResult {
+export function parseScanResult(responseText: string): ScanResult {
     let jsonStr = responseText;
 
     const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -381,90 +376,6 @@ function parseResponse(responseText: string): ScanResult {
     }
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        return await fetch(url, { ...options, signal: controller.signal });
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
-export async function analyzeTOSviaServer(tosText: string, sourceUrl?: string, deviceId?: string): Promise<ScanResult> {
-    if (!tosText || tosText.trim().length === 0) throw new Error('No ToS text provided');
-
-    const text = truncateText(tosText.trim());
-    const MAX_RETRIES = 2;
-    const TIMEOUT_MS = 45000; // 45s to handle cold starts + LLM response time
-
-    let domain = 'unknown';
-    if (sourceUrl) {
-        try {
-            domain = new URL(sourceUrl).hostname.replace('www.', '');
-        } catch {
-            domain = sourceUrl;
-        }
-    }
-
-    const fetchOptions: RequestInit = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': SYNDICATE_API_KEY,
-        },
-        body: JSON.stringify({
-            tos_text: text,
-            domain: domain,
-            device_id: deviceId ?? '00000000-0000-0000-0000-000000000000',
-        }),
-    };
-
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-            const response = await fetchWithTimeout(SYNDICATE_SERVER_URL, fetchOptions, TIMEOUT_MS);
-
-            if (!response.ok) {
-                if (response.status === 429) throw new Error('RATE_LIMITED');
-
-                const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
-
-                if (response.status === 401 || response.status === 403) throw new Error('Syndicate server authentication failed.');
-                if (response.status >= 500) {
-                    // Retry on 5xx
-                    if (attempt < MAX_RETRIES) {
-                        console.warn(`[Blind-Sight] Server returned ${response.status}, retrying (${attempt}/${MAX_RETRIES})...`);
-                        await new Promise(r => setTimeout(r, 3000));
-                        continue;
-                    }
-                    throw new Error(`Syndicate server error (${response.status}). Please try again later.`);
-                }
-
-                const errMsg = (errorData as Record<string, string>)?.detail || (errorData as Record<string, string>)?.error;
-                throw new Error(errMsg ?? `Syndicate server request failed with status ${response.status}`);
-            }
-
-            const data = await response.json() as Record<string, unknown>;
-            return parseResponse(JSON.stringify(data));
-        } catch (error) {
-            const msg = (error as Error).message;
-            // Don't retry on rate-limit/auth errors
-            if (msg === 'RATE_LIMITED' || msg.includes('authentication')) throw error;
-
-            if (attempt < MAX_RETRIES) {
-                console.warn(`[Blind-Sight] Server request failed (attempt ${attempt}/${MAX_RETRIES}): ${msg}. Retrying...`);
-                await new Promise(r => setTimeout(r, 3000));
-                continue;
-            }
-
-            if (msg.includes('Syndicate server')) throw error;
-            console.error('Syndicate server error:', error);
-            throw new Error(`Syndicate server unavailable: ${msg}`, { cause: error });
-        }
-    }
-
-    throw new Error('Syndicate server unavailable: all retries exhausted');
-}
 
 export async function analyzeTOS(apiKey: string, tosText: string): Promise<ScanResult> {
     if (!apiKey) throw new Error('API key is required');
@@ -512,7 +423,7 @@ export async function analyzeTOS(apiKey: string, tosText: string): Promise<ScanR
         const responseText = data.choices?.[0]?.message?.content;
 
         if (!responseText) throw new Error('Empty response from OpenAI API');
-        return parseResponse(responseText);
+        return parseScanResult(responseText);
     } catch (error) {
         const msg = (error as Error).message;
         if (msg.includes('API key') || msg.includes('Rate limit') || msg.includes('quota')) throw error;
@@ -590,7 +501,7 @@ async function analyzeTOSviaGemini(apiKey: string, tosText: string): Promise<Sca
         const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!responseText) throw new Error('Empty response from Gemini API');
-        return parseResponse(responseText);
+        return parseScanResult(responseText);
     } catch (error) {
         const msg = (error as Error).message;
         if (msg.includes('API key') || msg.includes('Rate limit') || msg.includes('permission')) throw error;
