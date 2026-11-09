@@ -17,3 +17,4 @@ export * from './utils/hash';
 export * from './utils/i18n';
 export * from './utils/lru-cache';
 
+export * from './utils/url-guard';

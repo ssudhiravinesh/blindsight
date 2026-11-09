@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/deno";
 import { handler, json, requireMethod } from "../_shared/http.ts";
 import { requireCronSecret } from "../_shared/auth.ts";
 import { serviceClient } from "../_shared/supabase.ts";
+import { safeFetchText } from "../_shared/safe-fetch.ts";
 
 Sentry.init({
   dsn: Deno.env.get("SENTRY_DSN"),
@@ -197,18 +198,11 @@ Deno.serve(handler(async (req) => {
       }
 
       try {
-        // 1. Crawl the page
-        const response = await fetch(tosUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 BlindsightCrawler/1.0",
-          },
+        // 1. Crawl the page. tos_url is user-supplied, so it goes through the
+        // SSRF guard (public hosts only, DNS + redirect re-validation, size cap).
+        const { text: html } = await safeFetchText(tosUrl, {
+          headers: { "User-Agent": "BlindsightCrawler/1.0 (+https://github.com/blind-sight)" },
         });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${tosUrl}: HTTP ${response.status}`);
-        }
-
-        const html = await response.text();
         const plainText = extractTextFromHtml(html);
         const normalized = normalizeToS(plainText);
 

@@ -13,6 +13,7 @@ import {
     getApiKey,
     normalizeToS,
     hashToS,
+    isAllowedTosFetchUrl,
     getCachedScanResult,
     registerDevice,
     setCachedScanResult,
@@ -135,80 +136,38 @@ interface FetchTosResult {
     error?: string;
 }
 
-function isAllowedFetchUrl(urlStr: string, senderTabUrl?: string): boolean {
-    try {
-        const url = new URL(urlStr);
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-            return false;
-        }
+const MAX_TOS_FETCH_BYTES = 2 * 1024 * 1024;
 
-        const hostname = url.hostname.toLowerCase();
-        if (
-            hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname === '[::1]' ||
-            hostname.startsWith('10.') ||
-            hostname.startsWith('192.168.') ||
-            hostname.startsWith('172.16.') ||
-            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
-        ) {
-            return false;
-        }
-
-        if (senderTabUrl) {
-            const senderUrl = new URL(senderTabUrl);
-            const senderHost = senderUrl.hostname.toLowerCase();
-            
-            if (hostname === senderHost || hostname.endsWith('.' + senderHost)) return true;
-            
-            const getDomain = (host: string) => {
-                const parts = host.split('.');
-                if (parts.length >= 2) {
-                    return parts.slice(-2).join('.');
-                }
-                return host;
-            };
-            if (getDomain(hostname) === getDomain(senderHost)) return true;
-        }
-
-        const allowedDomains = [
-            'termsfeed.com',
-            'termly.io',
-            'iubenda.com',
-            'getterms.io',
-            'shopify.com',
-            'github.com',
-            'google.com',
-            'microsoft.com',
-            'apple.com',
-        ];
-        if (allowedDomains.some(domain => hostname === domain || hostname.endsWith('.' + domain))) {
-            return true;
-        }
-
-        const path = url.pathname.toLowerCase();
-        const isLegalPath = ['terms', 'tos', 'privacy', 'legal', 'eula', 'agreement'].some(kw => path.includes(kw));
-        if (isLegalPath) return true;
-
-        return false;
-    } catch {
-        return false;
-    }
-}
-
+/**
+ * Fetches a ToS page on behalf of a content script. The URL comes from the web
+ * page, so it is treated as attacker-controlled: SSRF guard, no cookies, the
+ * final post-redirect URL is re-checked, and the body is size/type-bounded.
+ */
 async function fetchTosContent(url: string, senderTabUrl?: string): Promise<FetchTosResult> {
-    if (!isAllowedFetchUrl(url, senderTabUrl)) {
-        return { success: false, error: 'URL is not allowed by the security policy', url };
+    if (typeof url !== 'string' || !isAllowedTosFetchUrl(url, senderTabUrl)) {
+        return { success: false, error: 'URL is not allowed by the security policy', url: String(url) };
     }
     try {
         const response = await fetch(url, {
             method: 'GET',
-            headers: { Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
+            credentials: 'omit',
+            referrerPolicy: 'no-referrer',
+            signal: AbortSignal.timeout(15_000),
+            headers: { Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9' },
         });
 
+        if (!isAllowedTosFetchUrl(response.url || url, senderTabUrl)) {
+            return { success: false, error: 'Redirect target is not allowed by the security policy', url };
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
+        const type = (response.headers.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
+        if (type && !['text/html', 'application/xhtml+xml', 'text/plain'].includes(type)) {
+            throw new Error(`Unexpected content type ${type}`);
+        }
         const html = await response.text();
+        if (html.length > MAX_TOS_FETCH_BYTES) throw new Error('Document too large');
+
         const text = extractTextFromHTML(html);
         return { success: true, url, text, charCount: text.length };
     } catch (error) {
