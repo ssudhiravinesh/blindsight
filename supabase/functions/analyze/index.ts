@@ -264,10 +264,10 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // 1. Quota Check & User Resolution
+    // 1. User Resolution
     const { data: user, error: userError } = await supabase
       .from("anon_users")
-      .select("id, scans_today, tier")
+      .select("id")
       .eq("device_id", device_id)
       .single();
 
@@ -275,14 +275,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Device not registered" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
-      });
-    }
-
-    const limit = user.tier === "pro" ? 999999 : 5;
-    if (user.scans_today >= limit) {
-      return new Response(JSON.stringify({ error: "Daily scan limit reached. Please upgrade to Pro." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 429,
       });
     }
 
@@ -416,18 +408,14 @@ serve(async (req) => {
 
     const duration = Date.now() - startTime;
 
-    // 6. Update user scans counts
-    const { error: updateQuotaError } = await supabase
+    // 6. Record activity
+    const { error: activityError } = await supabase
       .from("anon_users")
-      .update({
-        scans_today: user.scans_today + 1,
-        last_scan_date: new Date().toISOString().split("T")[0],
-        last_active_at: new Date().toISOString()
-      })
+      .update({ last_active_at: new Date().toISOString() })
       .eq("id", user.id);
 
-    if (updateQuotaError) {
-      console.error("Failed to update user quota usage:", updateQuotaError);
+    if (activityError) {
+      console.error("Failed to update user activity:", activityError);
     }
 
     // 7. Log scan to audit logs

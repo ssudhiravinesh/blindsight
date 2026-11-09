@@ -1,10 +1,6 @@
 import { t } from '@blindsight/core';
 
-interface Props {
-    tier?: string;
-}
-
-export default function Header({ tier }: Props) {
+export default function Header() {
     return (
         <header className="p-4 border-b border-bs-border bg-bs-bg-secondary flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -14,16 +10,9 @@ export default function Header({ tier }: Props) {
                     </svg>
                 </div>
                 <div>
-                    <div className="flex items-center gap-1.5">
-                        <h1 className="text-base font-bold tracking-tight text-bs-text-primary">
-                            {t('extName', 'Blind-Sight')}
-                        </h1>
-                        {tier === 'pro' && (
-                            <span className="bg-bs-accent/15 text-bs-accent text-[9px] font-black px-1.5 py-0.5 rounded-md border border-bs-accent/20 tracking-wide uppercase animate-fade-in">
-                                PRO 👑
-                            </span>
-                        )}
-                    </div>
+                    <h1 className="text-base font-bold tracking-tight text-bs-text-primary">
+                        {t('extName', 'Blind-Sight')}
+                    </h1>
                     <p className="text-[10px] text-bs-accent font-medium tracking-wider uppercase">
                         Legal Firewall
                     </p>

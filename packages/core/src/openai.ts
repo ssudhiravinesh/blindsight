@@ -425,7 +425,7 @@ export async function analyzeTOSviaServer(tosText: string, sourceUrl?: string, d
             const response = await fetchWithTimeout(SYNDICATE_SERVER_URL, fetchOptions, TIMEOUT_MS);
 
             if (!response.ok) {
-                if (response.status === 429) throw new Error('QUOTA_LIMIT_REACHED');
+                if (response.status === 429) throw new Error('RATE_LIMITED');
 
                 const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
 
@@ -448,8 +448,8 @@ export async function analyzeTOSviaServer(tosText: string, sourceUrl?: string, d
             return parseResponse(JSON.stringify(data));
         } catch (error) {
             const msg = (error as Error).message;
-            // Don't retry on quota/auth errors
-            if (msg === 'QUOTA_LIMIT_REACHED' || msg.includes('authentication')) throw error;
+            // Don't retry on rate-limit/auth errors
+            if (msg === 'RATE_LIMITED' || msg.includes('authentication')) throw error;
 
             if (attempt < MAX_RETRIES) {
                 console.warn(`[Blind-Sight] Server request failed (attempt ${attempt}/${MAX_RETRIES}): ${msg}. Retrying...`);

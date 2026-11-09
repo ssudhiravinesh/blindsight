@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MAX_TRACKED_SERVICES = 50;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -29,7 +31,7 @@ serve(async (req) => {
     // Resolve user ID from device ID
     const { data: user, error: userError } = await supabase
       .from("anon_users")
-      .select("id, tier")
+      .select("id")
       .eq("device_id", deviceId)
       .single();
 
@@ -41,7 +43,7 @@ serve(async (req) => {
     }
 
     if (req.method === "POST") {
-      // Check limits (free tier: max 5 services tracked)
+      // Flat per-device cap: abuse protection for the nightly crawler, not a paid limit.
       const { count, error: countError } = await supabase
         .from("tracked_services")
         .select("*", { count: "exact", head: true })
@@ -49,10 +51,9 @@ serve(async (req) => {
 
       if (countError) throw countError;
 
-      const trackingLimit = user.tier === "pro" ? 999999 : 5;
-      if ((count ?? 0) >= trackingLimit) {
+      if ((count ?? 0) >= MAX_TRACKED_SERVICES) {
         return new Response(
-          JSON.stringify({ error: `Tracked domains limit reached (${trackingLimit}) for free tier` }),
+          JSON.stringify({ error: `You can track up to ${MAX_TRACKED_SERVICES} services` }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 403,

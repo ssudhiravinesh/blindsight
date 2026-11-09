@@ -10,7 +10,7 @@ import type { ScanResponse, ScanResult, HistoryEntry, SeverityKey } from '@blind
 import { isScanError, SEVERITY_CONFIG, t } from '@blindsight/core';
 
 
-type Status = 'idle' | 'scanning' | 'safe' | 'notable' | 'caution' | 'danger' | 'error' | 'nokey';
+type Status = 'idle' | 'scanning' | 'safe' | 'notable' | 'caution' | 'danger' | 'error' | 'ratelimited';
 
 function sendToContentScript(message: Record<string, unknown>): Promise<ScanResponse> {
     return new Promise((resolve, reject) => {
@@ -55,26 +55,6 @@ export default function App() {
     const [result, setResult] = useState<ScanResult | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
-    const [quota, setQuota] = useState<{ scans_today: number; limit: number; tier: string } | null>(null);
-    const [upgrading, setUpgrading] = useState(false);
-
-    const fetchQuota = useCallback(() => {
-        chrome.runtime.sendMessage({ type: 'GET_QUOTA' }, (response) => {
-            if (response && !response.error) {
-                setQuota(response);
-            }
-        });
-    }, []);
-
-    const handleUpgrade = async () => {
-        setUpgrading(true);
-        chrome.runtime.sendMessage({ type: 'UPGRADE_PRO' }, (response) => {
-            setUpgrading(false);
-            if (response && response.success) {
-                fetchQuota();
-            }
-        });
-    };
 
     const handleScan = useCallback(async () => {
         setStatus('scanning');
@@ -87,10 +67,10 @@ export default function App() {
             const response = await sendToContentScript({ type: 'MANUAL_SCAN' });
 
             if (isScanError(response)) {
-                if (response.error === 'QUOTA_LIMIT_REACHED') {
-                    setStatus('nokey');
-                    setStatusMessage(t('quotaReachedTitle', 'Quota Reached'));
-                    setErrorMessage(t('quotaReachedDesc', 'You have reached your limit of 5 free scans for today. Upgrade to Pro for unlimited instant scans!'));
+                if (response.error === 'RATE_LIMITED') {
+                    setStatus('ratelimited');
+                    setStatusMessage(t('rateLimitedTitle', 'Slow down'));
+                    setErrorMessage(t('rateLimitedDesc', 'Too many scans in a short period. Please wait a minute and try again.'));
                 } else {
                     setStatus('error');
                     setStatusMessage(t('scanFailed', 'Scan failed'));
@@ -129,13 +109,12 @@ export default function App() {
 
             const h = await loadHistory();
             setHistory(h);
-            fetchQuota();
         } catch (error) {
             const errStr = (error as Error).message || '';
-            if (errStr.includes('QUOTA_LIMIT_REACHED')) {
-                setStatus('nokey');
-                setStatusMessage(t('quotaReachedTitle', 'Quota Reached'));
-                setErrorMessage(t('quotaReachedDesc', 'You have reached your limit of 5 free scans for today. Upgrade to Pro for unlimited instant scans!'));
+            if (errStr.includes('RATE_LIMITED')) {
+                setStatus('ratelimited');
+                setStatusMessage(t('rateLimitedTitle', 'Slow down'));
+                setErrorMessage(t('rateLimitedDesc', 'Too many scans in a short period. Please wait a minute and try again.'));
             } else {
                 setStatus('error');
                 setStatusMessage(t('scanFailed', 'Scan failed'));
@@ -144,13 +123,12 @@ export default function App() {
         } finally {
             setScanning(false);
         }
-    }, [fetchQuota]);
+    }, []);
 
     useEffect(() => {
         (async () => {
             const h = await loadHistory();
             setHistory(h);
-            fetchQuota();
 
             const sessionData = await chrome.storage.session.get(['autoScan']);
             if (sessionData.autoScan) {
@@ -158,37 +136,16 @@ export default function App() {
                 handleScan();
             }
         })();
-    }, [handleScan, fetchQuota]);
+    }, [handleScan]);
 
     return (
         <div className="flex flex-col min-h-[500px]">
-            <Header tier={quota?.tier} />
+            <Header />
 
             <div className="flex-1 p-4 flex flex-col gap-4">
                 <StatusIndicator status={status} message={statusMessage} />
 
                 <ScanButton onClick={handleScan} scanning={scanning} disabled={scanning} />
-
-                {quota && quota.tier === 'free' && (
-                    <div className="bg-bs-bg-secondary border border-bs-border rounded-xl p-3.5 flex flex-col gap-2.5 animate-slide-in mt-[-4px]">
-                        <div className="flex justify-between items-center text-xs font-semibold text-bs-text-secondary">
-                            <span>{t('scansToday', `Scans today: $1 / $2`, [quota.scans_today, quota.limit])}</span>
-                            <button
-                                onClick={handleUpgrade}
-                                disabled={upgrading}
-                                className="text-bs-accent hover:text-bs-accent-hover font-bold text-xs flex items-center gap-1 transition-colors duration-200"
-                            >
-                                {upgrading ? 'Upgrading...' : t('upgradeToPro', 'Upgrade to Pro 👑')}
-                            </button>
-                        </div>
-                        <div className="w-full bg-bs-bg-tertiary h-1.5 rounded-full overflow-hidden">
-                            <div
-                                className="bg-bs-accent h-full rounded-full transition-all duration-500 ease-out"
-                                style={{ width: `${Math.min(100, (quota.scans_today / quota.limit) * 100)}%` }}
-                            />
-                        </div>
-                    </div>
-                )}
 
                 {scanning && <div className="animate-fade-in"><ScanSkeleton /></div>}
 
@@ -199,7 +156,7 @@ export default function App() {
                         <div className="flex items-start gap-3">
                             <span className="text-lg">❌</span>
                             <div>
-                                <h3 className="font-bold text-sm text-bs-danger mb-0.5 tracking-wide">{status === 'nokey' ? t('quotaReachedTitle', 'Quota Reached') : t('scanFailed', 'Scan Failed')}</h3>
+                                <h3 className="font-bold text-sm text-bs-danger mb-0.5 tracking-wide">{status === 'ratelimited' ? t('rateLimitedTitle', 'Slow down') : t('scanFailed', 'Scan Failed')}</h3>
                                 <p className="text-xs text-bs-danger/80">{errorMessage}</p>
                             </div>
                         </div>

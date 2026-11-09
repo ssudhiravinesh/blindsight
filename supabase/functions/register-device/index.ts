@@ -20,7 +20,7 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from("anon_users")
-      .insert({ device_id: deviceId, tier: "free" })
+      .insert({ device_id: deviceId })
       .select()
       .single();
 
@@ -32,7 +32,6 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         device_id: data.device_id,
-        tier: data.tier,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

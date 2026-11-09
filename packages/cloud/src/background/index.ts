@@ -32,10 +32,7 @@ async function getOrCreateDeviceId(): Promise<string | null> {
         if (response.ok) {
             const resJson = await response.json();
             if (resJson.device_id) {
-                await chrome.storage.local.set({
-                    device_id: resJson.device_id,
-                    user_tier: resJson.tier || 'free'
-                });
+                await chrome.storage.local.set({ device_id: resJson.device_id });
                 return resJson.device_id;
             }
         } else {
@@ -45,22 +42,6 @@ async function getOrCreateDeviceId(): Promise<string | null> {
         console.error('[Blind-Sight BG] Failed to register device dynamically:', err);
     }
     return null;
-}
-
-async function checkUserQuota(deviceId: string): Promise<any> {
-    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/check-quota?device_id=${deviceId}`);
-    if (!response.ok) throw new Error(`Quota check failed with status ${response.status}`);
-    return response.json();
-}
-
-async function upgradeUserToPro(deviceId: string): Promise<any> {
-    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/check-quota`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_id: deviceId })
-    });
-    if (!response.ok) throw new Error(`Upgrade failed with status ${response.status}`);
-    return response.json();
 }
 
 Sentry.init({
@@ -265,7 +246,7 @@ async function handleAnalyzeTOS(
             return cached;
         }
 
-        // 2. Fetch/Register device_id for cloud quota tracking
+        // 2. Fetch/Register device_id (used for abuse rate limiting and tracking)
         const deviceId = await getOrCreateDeviceId();
 
         let result: ScanResult | null = null;
@@ -275,9 +256,9 @@ async function handleAnalyzeTOS(
             result = await analyzeTOSviaServer(tosText, sender.tab?.url, deviceId || undefined);
         } catch (error) {
             serverError = (error as Error).message;
-            if (serverError === 'QUOTA_LIMIT_REACHED') {
+            if (serverError === 'RATE_LIMITED') {
                 setBadge('error', tabId);
-                return { error: 'QUOTA_LIMIT_REACHED' };
+                return { error: 'RATE_LIMITED' };
             }
             console.warn('[Blind-Sight BG] Syndicate server failed, trying OpenAI fallback:', serverError);
         }
@@ -501,29 +482,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             getHistory()
                 .then((history) => sendResponse(history))
                 .catch(() => sendResponse([]));
-            return true;
-
-        case 'GET_QUOTA':
-            getOrCreateDeviceId()
-                .then(async (deviceId) => {
-                    if (!deviceId) return sendResponse({ error: 'No device ID' });
-                    const quotaInfo = await checkUserQuota(deviceId);
-                    sendResponse(quotaInfo);
-                })
-                .catch((err) => sendResponse({ error: err.message }));
-            return true;
-
-        case 'UPGRADE_PRO':
-            getOrCreateDeviceId()
-                .then(async (deviceId) => {
-                    if (!deviceId) return sendResponse({ error: 'No device ID' });
-                    const res = await upgradeUserToPro(deviceId);
-                    if (res.success) {
-                        await chrome.storage.local.set({ user_tier: 'pro' });
-                    }
-                    sendResponse(res);
-                })
-                .catch((err) => sendResponse({ error: err.message }));
             return true;
 
         default:

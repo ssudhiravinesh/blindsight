@@ -23,29 +23,13 @@
     "message": "Scan Terms",
     "description": "Button text to trigger scan"
   },
-  "scansToday": {
-    "message": "Scans today: $1 / $2",
-    "description": "Scans quota indicator",
-    "placeholders": {
-      "1": { "content": "$1" },
-      "2": { "content": "$2" }
-    }
+  "rateLimitedTitle": {
+    "message": "Slow down",
+    "description": "Abuse-protection rate limit title"
   },
-  "upgradeToPro": {
-    "message": "Upgrade to Pro 👑",
-    "description": "Upgrade button text"
-  },
-  "proMember": {
-    "message": "Pro Member 👑",
-    "description": "Pro badge text"
-  },
-  "quotaReachedTitle": {
-    "message": "Daily Quota Reached",
-    "description": "Quota error title"
-  },
-  "quotaReachedDesc": {
-    "message": "You have reached your limit of 5 free scans for today. Upgrade to Pro for unlimited instant scans!",
-    "description": "Quota error description"
+  "rateLimitedDesc": {
+    "message": "Too many scans in a short period. Please wait a minute and try again.",
+    "description": "Abuse-protection rate limit description"
   },
   "generalError": {
     "message": "An unexpected error occurred.",

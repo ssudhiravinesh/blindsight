@@ -11,7 +11,7 @@ const statusColors: Record<string, string> = {
     caution: 'bg-bs-caution',
     danger: 'bg-bs-danger animate-pulse',
     error: 'bg-bs-danger',
-    nokey: 'bg-bs-warning',
+    ratelimited: 'bg-bs-warning',
 };
 
 export default function StatusIndicator({ status, message }: Props) {
