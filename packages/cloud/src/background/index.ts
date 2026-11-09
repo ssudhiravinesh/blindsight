@@ -55,10 +55,34 @@ async function withDevice<T>(fn: (creds: DeviceCredentials) => Promise<T>): Prom
     }
 }
 
-Sentry.init({
-    dsn: 'https://d10e139a7143fc8517a8a97751f5d048@o4511585627406336.ingest.us.sentry.io/4511585637826560',
-    tracesSampleRate: 1.0,
-});
+// Error reporting is opt-in at build time (VITE_SENTRY_DSN) and never sends
+// page URLs, query strings or request bodies.
+// @ts-ignore -- provided by Vite
+const SENTRY_DSN: string | undefined = import.meta.env?.VITE_SENTRY_DSN;
+function scrubUrl(url?: string): string | undefined {
+    if (!url) return url;
+    try { return new URL(url).origin; } catch { return undefined; }
+}
+if (SENTRY_DSN) {
+    Sentry.init({
+        dsn: SENTRY_DSN,
+        tracesSampleRate: 0.05,
+        sendDefaultPii: false,
+        beforeSend(event) {
+            if (event.request) {
+                event.request.url = scrubUrl(event.request.url);
+                delete event.request.query_string;
+                delete event.request.data;
+                delete event.request.cookies;
+            }
+            return event;
+        },
+        beforeBreadcrumb(crumb) {
+            if (crumb.data?.url) crumb.data.url = scrubUrl(crumb.data.url as string);
+            return crumb;
+        },
+    });
+}
 
 async function saveToHistory(result: ScanResult, url: string): Promise<void> {
     try {
@@ -325,6 +349,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // Only accept messages from this extension's own pages and content scripts.
+    if (sender.id !== chrome.runtime.id || !request || typeof request.type !== 'string') return false;
     switch (request.type) {
         case 'ANALYZE_TOS':
             handleAnalyzeTOS(request, sender)

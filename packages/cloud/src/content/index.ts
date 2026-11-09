@@ -175,7 +175,8 @@ async function promptAndScanIfSignup(): Promise<void> {
     }
 }
 
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id || !request || typeof request.type !== 'string') return false;
     switch (request.type) {
         case 'MANUAL_SCAN':
             performScan()

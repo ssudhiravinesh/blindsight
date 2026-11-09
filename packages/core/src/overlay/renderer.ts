@@ -8,6 +8,16 @@
  * Secure helper to build DOM elements using standard DOM APIs.
  * Avoids innerHTML to prevent XSS.
  */
+export function isSafeLinkUrl(value: unknown): boolean {
+    if (typeof value !== 'string') return false;
+    try {
+        const { protocol } = new URL(value);
+        return protocol === 'https:' || protocol === 'http:';
+    } catch {
+        return false;
+    }
+}
+
 export function el(
     tag: string,
     attrs: Record<string, any> = {},
@@ -23,6 +33,9 @@ export function el(
         } else if (key.startsWith('on') && typeof val === 'function') {
             const eventName = key.slice(2).toLowerCase();
             element.addEventListener(eventName, val);
+        } else if ((key === 'href' || key === 'src') && !isSafeLinkUrl(val)) {
+            // Defence in depth: never emit javascript:/data: URLs into the host page.
+            continue;
         } else if (val !== undefined && val !== null) {
             element.setAttribute(key, String(val));
         }
