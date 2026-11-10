@@ -52,7 +52,7 @@ The Chrome Web Store requires explicit, single-purpose justifications for sensit
 Blindsight ("we," "our," or "us") is dedicated to protecting your privacy. This Privacy Policy details how we handle user data. Our core principle is simple: **we do not collect, store, or sell any personally identifiable information (PII).**
 
 ### Data Collection & Usage
-1. **Anonymous Account UUID**: Upon installation, the extension generates a random unique identifier (UUID). This token contains no email, name, or hardware identifiers. It is used solely for checking daily scan quotas (5 scans per day for the free tier).
+1. **Anonymous Device ID**: On first scan, the extension registers a random identifier (UUID) with our backend. It contains no email, name, or hardware identifiers. It is used only for abuse-prevention rate limiting and to deliver notifications for services you choose to track.
 2. **Scan Text Elements**: When you initiate a scan, the text of the legal terms on that page is normalized and hashed. This hash is compared against a database of previously analyzed terms. We only store the text hash and the anonymous ID to cache findings.
 3. **No Browsing History Stored**: Blindsight does not log, track, or record your browsing history. The extension only runs Strategy matchers locally on your device.
 

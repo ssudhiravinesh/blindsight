@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeToS } from './normalize';
+import { normalizeToS, htmlToText } from './normalize';
 import { hashToS } from './hash';
 
 describe('normalizeToS', () => {
@@ -29,6 +29,27 @@ describe('normalizeToS', () => {
   it('should convert text to lowercase', () => {
     const raw = 'TERMS OF SERVICE';
     expect(normalizeToS(raw)).toBe('terms of service');
+  });
+
+  it('decodes entities in a single pass', () => {
+    expect(normalizeToS('a &amp;lt; b')).toBe('a &lt; b');
+  });
+
+  it('stays fast on pathological tag input', () => {
+    const start = performance.now();
+    normalizeToS('<'.repeat(50_000));
+    htmlToText('<'.repeat(50_000));
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+});
+
+describe('htmlToText', () => {
+  it('strips script/style blocks whose end tags carry whitespace or attributes', () => {
+    expect(htmlToText('a<script>evil()</script\t\n bar>b<style>x{}</style >c')).toBe('a b c');
+  });
+
+  it('decodes entities in a single pass', () => {
+    expect(htmlToText('<p>x &amp;amp; y</p>')).toBe('x &amp; y');
   });
 });
 

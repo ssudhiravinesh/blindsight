@@ -119,10 +119,10 @@ async function promptAndScanIfSignup(): Promise<void> {
     if (!detection.isSignup) return;
 
     attachAgreementListeners(() => {
-        console.log('[Blind-Sight] User clicked agreement button. Tracking ToS...');
         chrome.runtime.sendMessage({
             type: 'TRACK_TOS_AGREEMENT',
-            domain: window.location.hostname.replace('www.', '')
+            domain: window.location.hostname.replace(/^www\./, ''),
+            tosUrl: getTosLinkForBackgroundFetch()?.url,
         });
     });
 
@@ -175,7 +175,8 @@ async function promptAndScanIfSignup(): Promise<void> {
     }
 }
 
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id || !request || typeof request.type !== 'string') return false;
     switch (request.type) {
         case 'MANUAL_SCAN':
             performScan()
