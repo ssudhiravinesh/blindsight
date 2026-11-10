@@ -11,6 +11,15 @@ export interface AnalysisClause {
   quote?: string;
   explanation: string;
   mitigation: string | null;
+  /** Jev's 0-1 confidence in the clause severity, when verified. */
+  confidence?: number;
+}
+
+export interface AnalysisVerification {
+  model: string;
+  /** Jev's 0-1 confidence in the overall grade. */
+  confidence: number;
+  droppedClauses: number;
 }
 
 export interface AnalysisAlternative {
@@ -26,6 +35,7 @@ export interface Analysis {
   summary?: string;
   clauses: AnalysisClause[];
   suggestedAlternatives: AnalysisAlternative[];
+  verification?: AnalysisVerification;
 }
 
 // The prompt lists ~40 categories; validate the format rather than duplicating the list.
@@ -47,6 +57,10 @@ function str(value: unknown, max: number): string | undefined {
 
 function severity(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(3, Math.round(value))) : fallback;
+}
+
+function probability(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : undefined;
 }
 
 function httpsUrl(value: unknown): string | undefined {
@@ -89,14 +103,31 @@ export function sanitizeAnalysis(raw: unknown): Analysis {
     .slice(0, MAX_CLAUSES)
     .map((c) => {
       const type = str(c.type, 40)?.toUpperCase() ?? "OTHER";
+      const confidence = probability(c.confidence);
       return {
         type: CLAUSE_TYPES.has(type) ? type : "OTHER",
         severity: severity(c.severity, 1),
         quote: str(c.quote, 1000),
         explanation: str(c.explanation, 1500) ?? "No explanation provided",
         mitigation: str(c.mitigation, 600) ?? null,
+        ...(confidence !== undefined ? { confidence } : {}),
       };
     });
+
+  const v = r.verification;
+  let verification: AnalysisVerification | undefined;
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    const vr = v as Record<string, unknown>;
+    const model = str(vr.model, 40);
+    const dropped = vr.droppedClauses;
+    if (model) {
+      verification = {
+        model,
+        confidence: probability(vr.confidence) ?? 0,
+        droppedClauses: typeof dropped === "number" && Number.isInteger(dropped) && dropped >= 0 ? Math.min(dropped, 100) : 0,
+      };
+    }
+  }
 
   const suggestedAlternatives = (Array.isArray(r.suggestedAlternatives) ? r.suggestedAlternatives : [])
     .filter((a): a is Record<string, unknown> => !!a && typeof a === "object")
@@ -113,6 +144,7 @@ export function sanitizeAnalysis(raw: unknown): Analysis {
     summary: str(r.summary, 600),
     clauses,
     suggestedAlternatives,
+    ...(verification ? { verification } : {}),
   };
 }
 

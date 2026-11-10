@@ -94,6 +94,19 @@
     "message": "Copied",
     "description": "Success message"
   },
+  "jevVerified": {
+    "message": "Verified by Jev · $1% confidence",
+    "description": "Shown when the analysis was verified by the Jev decision model",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "jevVerifiedHint": {
+    "message": "Each finding was checked against the document and its severity calibrated by Jev, a decision model from TypeSafe AI.",
+    "description": "Tooltip for the Jev verification line"
+  },
   "analyzedIn": {
     "message": "Analyzed in $1s",
     "description": "Analysis duration text",

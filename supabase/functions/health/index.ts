@@ -36,6 +36,7 @@ Deno.serve(handler(async (req) => {
       redis,
       groq: Deno.env.get("GROQ_API_KEY") ? "configured" : "missing",
       gemini: Deno.env.get("GEMINI_API_KEY") ? "configured" : "missing",
+      jev: Deno.env.get("TYPESAFE_API_KEY") ? "configured" : "missing",
     };
   }
 

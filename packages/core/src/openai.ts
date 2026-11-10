@@ -47,9 +47,11 @@ export function parseScanResult(responseText: string): ScanResult {
             quote: c.quote,
             explanation: c.explanation,
             mitigation: c.mitigation,
+            ...(c.confidence !== undefined ? { confidence: c.confidence } : {}),
         })),
         lethal: overallSeverity >= 3,
         ...(analysis.suggestedAlternatives.length > 0 ? { aiAlternatives: analysis.suggestedAlternatives } : {}),
+        ...(analysis.verification ? { verification: analysis.verification } : {}),
     };
 }
 

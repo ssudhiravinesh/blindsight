@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, Check, Copy, RotateCw, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, RotateCw, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ScanResult, SeverityKey } from '@blindsight/core';
 import { CLAUSE_INFO, getAlternatives, t } from '@blindsight/core';
 
@@ -170,6 +170,17 @@ export default function ResultCard({ result, onRescan }: Props) {
                         Rescan
                     </button>
                 </div>
+                {result.verification && (
+                    <p
+                        className="flex items-center justify-center gap-1 text-2xs text-fg-subtle"
+                        title={t('jevVerifiedHint', 'Each finding was checked against the document and its severity calibrated by Jev, a decision model from TypeSafe AI.')}
+                    >
+                        <ShieldCheck size={12} className="text-sev-0" aria-hidden="true" />
+                        {t('jevVerified', `Verified by Jev · ${Math.round(result.verification.confidence * 100)}% confidence`, [
+                            String(Math.round(result.verification.confidence * 100)),
+                        ])}
+                    </p>
+                )}
                 {result.scanDurationMs !== undefined && (
                     <p className="text-center text-2xs text-fg-subtle">
                         {t('analyzedIn', `Analyzed in ${(result.scanDurationMs / 1000).toFixed(1)}s`, [

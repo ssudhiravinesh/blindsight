@@ -1,5 +1,6 @@
 import { SYSTEM_PROMPT } from "./prompt.ts";
 import { type Analysis, parseAnalysis } from "./analysis.ts";
+import { verifyAnalysis } from "./jev.ts";
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -73,7 +74,14 @@ export async function analyzeTos(tosText: string): Promise<{ analysis: Analysis;
       continue;
     }
     try {
-      return { analysis: parseAnalysis(await call(key, tosText)), model };
+      const analysis = parseAnalysis(await call(key, tosText));
+      const jevKey = Deno.env.get("TYPESAFE_API_KEY");
+      if (!jevKey) return { analysis, model };
+      const verified = await verifyAnalysis(jevKey, tosText, analysis, { model: Deno.env.get("JEV_MODEL") || undefined });
+      return {
+        analysis: verified,
+        model: verified.verification ? `${model}+${verified.verification.model}` : model,
+      };
     } catch (err) {
       failures.push(`${model}: ${(err as Error).message}`);
     }

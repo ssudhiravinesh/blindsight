@@ -85,6 +85,8 @@ Function secrets (`supabase secrets set …` in production):
 | Name | Purpose |
 |---|---|
 | `GROQ_API_KEY`, `GEMINI_API_KEY` | LLM providers (Groq primary, Gemini fallback) |
+| `TYPESAFE_API_KEY` | Optional. Verifies each LLM analysis with [Jev](https://docs.typesafe.ai): drops clauses not found in the document and calibrates severities (at most ±1 tier) |
+| `JEV_MODEL` | Optional Jev model ID (default `jev-1.14.0`) |
 | `CRON_SECRET` | ≥32 random chars; authorises the crawler and detailed health |
 | `ALLOWED_ORIGINS` | Comma-separated, e.g. `chrome-extension://<extension-id>` |
 | `RATE_LIMIT_SALT` | Random salt for hashing client IPs |
