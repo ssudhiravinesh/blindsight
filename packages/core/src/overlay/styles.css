@@ -4,20 +4,95 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  */
 
+/* In-page overlays. Rendered inside a Shadow DOM; the :host reset stops the
+   host page's inherited font, colour and spacing from leaking in. */
+
+:host {
+    all: initial;
+    --bs-ink-900: #0B0D12;
+    --bs-ink-850: #10131A;
+    --bs-ink-800: #151922;
+    --bs-line: rgba(255, 255, 255, 0.08);
+    --bs-line-strong: rgba(255, 255, 255, 0.14);
+    --bs-fg: #ECEEF3;
+    --bs-fg-muted: #9AA1B1;
+    --bs-fg-subtle: #6B7385;
+    --bs-accent: #8B7CFF;
+    --bs-accent-soft: #B3A9FF;
+    --bs-sev-0: #34D399;
+    --bs-sev-1: #FACC15;
+    --bs-sev-2: #FB923C;
+    --bs-sev-3: #F43F5E;
+    --bs-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --bs-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#blind-sight-overlay,
+#blind-sight-prompt-banner,
+#bs-scanning-banner,
+#bs-result-card {
+    font-family: var(--bs-font);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--bs-fg);
+    letter-spacing: normal;
+    text-align: left;
+    -webkit-font-smoothing: antialiased;
+    box-sizing: border-box;
+}
+
+#blind-sight-overlay *,
+#blind-sight-prompt-banner *,
+#bs-scanning-banner *,
+#bs-result-card * {
+    box-sizing: border-box;
+}
+
+p { margin: 0; }
+
+button {
+    font: inherit;
+    color: inherit;
+}
+
+.bs-logo { display: block; flex-shrink: 0; }
+
+/* Shared floating "card" surface for the prompt, scanning and result toasts. */
+#blind-sight-prompt-banner,
+#bs-scanning-banner,
+#bs-result-card {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 2147483647;
+    width: min(380px, calc(100vw - 32px));
+    background: rgba(16, 19, 26, 0.92);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--bs-line-strong);
+    border-radius: 16px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 24px 48px -16px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
 /* ==========================================================================
-   Overlay & Layout
+   Warning modal
    ========================================================================== */
 
 #blind-sight-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 15, 25, 0.85);
-    backdrop-filter: blur(8px);
     z-index: 2147483646;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px;
+    background: rgba(5, 6, 10, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     animation: bs-fade-in 0.25s ease-out;
 }
 
@@ -26,142 +101,197 @@
     to { opacity: 1; }
 }
 
-/* ==========================================================================
-   Warning Modal
-   ========================================================================== */
-
 #blind-sight-modal {
-    background: #0d0d1b;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    width: 90%;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     max-width: 480px;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
-    animation: bs-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-sizing: border-box;
+    max-height: min(760px, calc(100vh - 48px));
+    overflow: hidden;
+    background: var(--bs-ink-850);
+    border: 1px solid var(--bs-line-strong);
+    border-radius: 20px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 40px 80px -24px rgba(0, 0, 0, 0.8);
+    animation: bs-slide-in 0.4s var(--bs-ease);
 }
 
 @keyframes bs-slide-in {
-    from {
-        transform: translateY(16px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(12px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .bs-modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    --tone: var(--bs-sev-2);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid var(--bs-line);
+    background:
+        radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tone) 18%, transparent) 0%, transparent 60%);
 }
 
-.bs-modal-header.orange {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 179, 8, 0.05) 100%);
-    border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+.bs-modal-header.orange { --tone: var(--bs-sev-2); }
+.bs-modal-header.red { --tone: var(--bs-sev-3); }
+
+.bs-modal-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 30%, transparent);
 }
 
-.bs-modal-header.red {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.05) 100%);
-    border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+.bs-modal-heading { min-width: 0; }
+
+.bs-modal-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--tone);
+    margin-bottom: 2px;
 }
 
 .bs-modal-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0 0 4px;
+    font-size: 19px;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    color: var(--bs-fg);
 }
 
 .bs-modal-subtitle {
+    margin-top: 4px;
     font-size: 13px;
-    color: #94a3b8;
-    line-height: 1.4;
+    color: var(--bs-fg-muted);
 }
 
+/* Header and footer stay pinned; only the findings scroll, so the actions are always visible. */
 .bs-modal-body {
-    padding: 16px 24px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px 24px 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
-/* ==========================================================================
-   Clause List
-   ========================================================================== */
+/* Findings */
 
 .bs-clause-list {
     list-style: none;
     padding: 0;
     margin: 0 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .bs-clause-item {
-    padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    margin-bottom: 8px;
+    --dot: var(--bs-sev-2);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px 12px 30px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--bs-line);
+    border-radius: 12px;
+}
+
+.bs-clause-item::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 18px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--dot);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--dot) 22%, transparent);
+}
+
+.bs-clause-item.yellow { --dot: var(--bs-sev-1); }
+.bs-clause-item.orange { --dot: var(--bs-sev-2); }
+.bs-clause-item.red { --dot: var(--bs-sev-3); }
+
+.bs-clause-name {
     font-size: 13px;
-    color: #e2e8f0;
-    line-height: 1.5;
-    border-left: 4px solid;
-    box-sizing: border-box;
+    font-weight: 600;
+    color: var(--bs-fg);
 }
 
-.bs-clause-item.orange {
-    border-color: #f97316;
+.bs-clause-text {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--bs-fg-muted);
 }
 
-.bs-clause-item.red {
-    border-color: #ef4444;
-}
-
-/* ==========================================================================
-   Input / Confirm Fields
-   ========================================================================== */
+/* Confirmation input (critical modal) */
 
 .bs-confirm-label {
-    font-size: 12px;
-    color: #94a3b8;
+    margin: 0 0 -2px;
+    font-size: 12.5px;
+    color: var(--bs-fg-muted);
     text-align: center;
-    margin-bottom: 8px;
 }
 
 .bs-confirm-label strong {
-    color: #f3f4f6;
-    letter-spacing: 0.5px;
+    color: var(--bs-fg);
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
 }
 
 .bs-confirm-input {
+    display: block;
     width: 100%;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    color: #ffffff;
-    font-size: 14px;
+    height: 44px;
+    margin-bottom: 4px;
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--bs-line-strong);
+    border-radius: 12px;
+    color: var(--bs-fg);
+    font: 600 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.18em;
     text-align: center;
-    letter-spacing: 2px;
+    text-transform: uppercase;
     outline: none;
-    box-sizing: border-box;
-    margin-bottom: 12px;
-    transition: all 0.2s ease;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.bs-confirm-input::placeholder {
+    color: var(--bs-fg-subtle);
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-weight: 400;
+    font-family: var(--bs-font);
 }
 
 .bs-confirm-input:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    border-color: rgba(139, 124, 255, 0.7);
+    box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.16);
 }
 
 .bs-confirm-input.valid {
-    border-color: #22c55e;
-    background: rgba(34, 197, 94, 0.06);
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+    border-color: color-mix(in srgb, var(--bs-sev-0) 70%, transparent);
+    background: color-mix(in srgb, var(--bs-sev-0) 7%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--bs-sev-0) 14%, transparent);
 }
 
 .bs-confirm-input.invalid {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.06);
+    border-color: var(--bs-sev-3);
     animation: bs-shake 0.3s ease;
 }
 
@@ -171,488 +301,499 @@
     75% { transform: translateX(4px); }
 }
 
-/* ==========================================================================
-   Footer & Buttons
-   ========================================================================== */
+/* Footer & buttons */
 
 .bs-modal-footer {
-    padding: 16px 24px 20px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 16px 24px 22px;
+    border-top: 1px solid var(--bs-line);
+    background: var(--bs-ink-850);
 }
 
 .bs-btn {
-    padding: 11px 16px;
-    border-radius: 8px;
-    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    text-align: center;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
+    transition: filter 0.15s, background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
 }
 
+.bs-btn:active:not(:disabled) { transform: scale(0.985); }
+
 .bs-btn:focus-visible {
-    outline: 2px solid #818cf8;
+    outline: 2px solid var(--bs-accent-soft);
     outline-offset: 2px;
 }
 
 .bs-btn:disabled {
-    opacity: 0.4;
     cursor: not-allowed;
+    opacity: 0.55;
 }
 
+/* Leaving is the safe choice, so it gets the primary treatment. */
 .bs-btn-abort {
-    background: rgba(239, 68, 68, 0.12);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fff;
+    background-image: linear-gradient(135deg, #8B7CFF 0%, #6E63FF 45%, #5B8CFF 100%);
+    box-shadow: 0 10px 24px -10px rgba(139, 124, 255, 0.75);
 }
 
-.bs-btn-abort:hover {
-    background: rgba(239, 68, 68, 0.22);
-}
+.bs-btn-abort:hover { filter: brightness(1.08); }
 
 .bs-btn-proceed {
-    background: rgba(255, 255, 255, 0.06);
-    color: #94a3b8;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Block, not flex: the countdown is split across text nodes that flex would space apart. */
+    display: block;
+    line-height: 42px;
+    text-align: center;
+    color: var(--bs-fg-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--bs-line-strong);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
 }
 
 .bs-btn-proceed:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--bs-fg);
+    background: rgba(255, 255, 255, 0.07);
 }
 
-/* ==========================================================================
-   Alternatives Section
-   ========================================================================== */
+/* Alternatives */
 
-.bs-alt-section {
-    margin-top: 14px;
-    padding: 14px;
-    background: rgba(34, 197, 94, 0.03);
-    border-radius: 10px;
-    border: 1px solid rgba(34, 197, 94, 0.1);
-}
+.bs-alt-section { margin: 4px 0 8px; }
 
 .bs-alt-title {
-    font-size: 12px;
-    font-weight: 700;
-    color: #22c55e;
-    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--bs-fg-subtle);
 }
 
 .bs-alt-card {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
+    gap: 12px;
+    padding: 10px 12px;
     margin-bottom: 6px;
+    border: 1px solid var(--bs-line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    color: inherit;
     text-decoration: none;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
+    transition: background 0.15s, border-color 0.15s;
 }
 
 .bs-alt-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(34, 197, 94, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--bs-line-strong);
+}
+
+.bs-alt-card:focus-visible {
+    outline: 2px solid var(--bs-accent-soft);
+    outline-offset: 2px;
 }
 
 .bs-alt-icon {
-    font-size: 18px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bs-fg);
 }
 
-.bs-alt-info {
-    flex: 1;
-    min-width: 0;
-}
+.bs-alt-info { flex: 1; min-width: 0; }
 
 .bs-alt-name {
-    font-weight: 600;
-    color: #10b981;
     font-size: 13px;
+    font-weight: 600;
+    color: var(--bs-fg);
 }
 
 .bs-alt-reason {
-    font-size: 11px;
-    color: #94a3b8;
-    line-height: 1.4;
+    font-size: 12px;
+    color: var(--bs-fg-subtle);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .bs-alt-arrow {
-    color: #10b981;
-    font-size: 14px;
-    flex-shrink: 0;
-    opacity: 0.6;
-    transition: all 0.2s ease;
+    display: flex;
+    color: var(--bs-fg-subtle);
+    transition: transform 0.15s, color 0.15s;
 }
 
 .bs-alt-card:hover .bs-alt-arrow {
-    opacity: 1;
-    transform: translateX(3px);
+    color: var(--bs-fg);
+    transform: translate(2px, -2px);
+}
+
+.bs-alt-note {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--bs-fg-subtle);
 }
 
 /* ==========================================================================
-   Pre-Scan Prompt Banner
+   Sign-up prompt
    ========================================================================== */
 
 #blind-sight-prompt-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 2147483645;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    animation: bs-banner-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: bs-banner-slide-in 0.4s var(--bs-ease);
 }
 
 @keyframes bs-banner-slide-in {
-    from { transform: translateY(-100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from { transform: translateY(-8px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 @keyframes bs-banner-slide-out {
-    from { transform: translateY(0); opacity: 1; }
-    to { transform: translateY(-100%); opacity: 0; }
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to { transform: translateY(-8px) scale(0.98); opacity: 0; }
 }
 
 .bs-prompt-inner {
     display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #0f0f1b 0%, #15152a 100%);
-    border-bottom: 1px solid rgba(99, 102, 241, 0.25);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    box-sizing: border-box;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
 }
 
 .bs-prompt-icon {
-    font-size: 20px;
+    display: flex;
     flex-shrink: 0;
+    filter: drop-shadow(0 6px 14px rgba(114, 98, 255, 0.45));
 }
 
-.bs-prompt-text {
-    flex: 1;
-    min-width: 0;
-}
+.bs-prompt-text { flex: 1; min-width: 0; }
 
 .bs-prompt-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #e2e8f0;
-    margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--bs-fg);
 }
 
 .bs-prompt-subtitle {
-    font-size: 11px;
-    color: #94a3b8;
-    margin: 0;
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: var(--bs-fg-muted);
 }
 
 .bs-prompt-actions {
     display: flex;
     gap: 8px;
-    flex-shrink: 0;
+    margin-top: 12px;
+}
+
+.bs-prompt-scan-btn,
+.bs-prompt-later-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, background 0.15s, color 0.15s;
 }
 
 .bs-prompt-scan-btn {
-    padding: 7px 16px;
-    border-radius: 6px;
-    border: none;
-    font-size: 12px;
-    font-weight: 700;
+    color: #fff;
+    background-image: linear-gradient(135deg, #8B7CFF 0%, #6E63FF 45%, #5B8CFF 100%);
+    box-shadow: 0 8px 18px -8px rgba(139, 124, 255, 0.8);
+}
+
+.bs-prompt-scan-btn:hover { filter: brightness(1.08); }
+
+.bs-prompt-later-btn {
+    color: var(--bs-fg-muted);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--bs-line);
+    font-weight: 500;
+}
+
+.bs-prompt-later-btn:hover {
+    color: var(--bs-fg);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.bs-prompt-dismiss-btn,
+.bs-result-close {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: -4px -4px 0 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--bs-fg-subtle);
     cursor: pointer;
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
-    color: #ffffff;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-    transition: all 0.2s ease;
+    transition: background 0.15s, color 0.15s;
 }
 
-.bs-prompt-scan-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+.bs-prompt-dismiss-btn:hover,
+.bs-result-close:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--bs-fg);
 }
 
-.bs-prompt-dismiss-btn {
-    padding: 7px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    color: #94a3b8;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.bs-prompt-dismiss-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #e2e8f0;
+.bs-prompt-scan-btn:focus-visible,
+.bs-prompt-later-btn:focus-visible,
+.bs-prompt-dismiss-btn:focus-visible,
+.bs-result-close:focus-visible {
+    outline: 2px solid var(--bs-accent-soft);
+    outline-offset: 2px;
 }
 
 /* ==========================================================================
-   Scanning Banner
+   Scanning indicator
    ========================================================================== */
 
 #bs-scanning-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 2147483645;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    animation: bs-banner-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    width: auto;
+    max-width: calc(100vw - 32px);
+    border-radius: 999px;
+    animation: bs-banner-slide-in 0.4s var(--bs-ease);
 }
 
 .bs-scanning-inner {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #0d0d1b 0%, #15152a 100%);
-    border-bottom: 1px solid rgba(99, 102, 241, 0.25);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    box-sizing: border-box;
+    padding: 10px 18px 10px 12px;
 }
 
 .bs-scanning-spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(99, 102, 241, 0.2);
-    border-top-color: #818cf8;
-    border-radius: 50%;
-    animation: bs-spin 0.8s linear infinite;
     flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0deg, #8B7CFF 220deg, #5B8CFF 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    animation: bs-spin 0.9s linear infinite;
 }
 
 @keyframes bs-spin {
     to { transform: rotate(360deg); }
 }
 
+.bs-scanning-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
 .bs-scanning-text {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--bs-fg);
 }
 
 .bs-scanning-sub {
-    font-size: 11px;
-    color: #94a3b8;
-    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--bs-fg-subtle);
 }
 
 /* ==========================================================================
-   Result Card (Toast)
+   Result toast
    ========================================================================== */
 
 #bs-result-card {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 2147483645;
-    width: 360px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    animation: bs-result-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    animation: bs-result-fade-in 0.4s var(--bs-ease);
 }
 
 @keyframes bs-result-fade-in {
-    from {
-        transform: translateY(-12px) scale(0.96);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
+    from { transform: translateY(-8px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 @keyframes bs-result-fade-out {
-    from {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(-12px) scale(0.96);
-        opacity: 0;
-    }
-}
-
-.bs-result-inner {
-    border-radius: 12px;
-    overflow: hidden;
-    background: #0d0d1b;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    box-sizing: border-box;
-}
-
-.bs-result-inner * {
-    box-sizing: border-box;
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-8px); opacity: 0; }
 }
 
 .bs-result-header {
-    padding: 14px 16px;
+    --tone: var(--bs-accent);
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 14px 14px 14px 14px;
+    background: radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--tone) 16%, transparent) 0%, transparent 60%);
 }
 
-.bs-result-header.safe {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
-    border-bottom: 1px solid rgba(34, 197, 94, 0.2);
-}
-
-.bs-result-header.notable {
-    background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
-    border-bottom: 1px solid rgba(234, 179, 8, 0.2);
-}
-
-.bs-result-header.caution {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
-    border-bottom: 1px solid rgba(249, 115, 22, 0.2);
-}
-
-.bs-result-header.danger,
-.bs-result-header.error {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(13, 13, 27, 0.8) 100%);
-    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
-}
+.bs-result-header.safe { --tone: var(--bs-sev-0); }
+.bs-result-header.notable { --tone: var(--bs-sev-1); }
+.bs-result-header.caution { --tone: var(--bs-sev-2); }
+.bs-result-header.danger { --tone: var(--bs-sev-3); }
+.bs-result-header.error { --tone: var(--bs-sev-3); }
 
 .bs-result-icon {
-    font-size: 24px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
 }
 
-.bs-result-info {
-    flex: 1;
-    min-width: 0;
-}
+.bs-result-info { flex: 1; min-width: 0; }
 
 .bs-result-title {
     font-size: 14px;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0 0 2px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--bs-fg);
 }
 
 .bs-result-msg {
-    font-size: 11px;
-    color: #94a3b8;
-    margin: 0;
-    line-height: 1.4;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-top: 1px;
+    font-size: 12px;
+    color: var(--bs-fg-muted);
+    overflow-wrap: anywhere;
 }
 
-.bs-result-close {
-    background: none;
-    border: none;
-    color: #64748b;
-    font-size: 16px;
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-    transition: color 0.2s ease;
+.bs-result-grade {
+    --tone: var(--bs-accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 32%, transparent);
 }
 
-.bs-result-close:hover {
-    color: #e2e8f0;
-}
+.bs-result-grade.safe { --tone: var(--bs-sev-0); }
+.bs-result-grade.notable { --tone: var(--bs-sev-1); }
+.bs-result-grade.caution { --tone: var(--bs-sev-2); }
+.bs-result-grade.danger { --tone: var(--bs-sev-3); }
 
 .bs-result-body {
-    padding: 12px 16px;
-    background: #0d0d1b;
+    padding: 2px 14px 12px;
 }
 
 .bs-result-clauses {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .bs-result-clause {
-    padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 6px;
-    margin-bottom: 6px;
-    font-size: 11px;
-    color: #cbd5e1;
-    line-height: 1.4;
-    border-left: 3px solid;
+    --dot: var(--bs-sev-1);
+    position: relative;
+    padding: 8px 10px 8px 24px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--bs-fg-muted);
+    cursor: default;
 }
 
-.bs-result-clause.green { border-color: #22c55e; }
-.bs-result-clause.yellow { border-color: #eab308; }
-.bs-result-clause.orange { border-color: #f97316; }
-.bs-result-clause.red { border-color: #ef4444; }
+.bs-result-clause::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 13px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dot);
+}
+
+.bs-result-clause.green { --dot: var(--bs-sev-0); }
+.bs-result-clause.yellow { --dot: var(--bs-sev-1); }
+.bs-result-clause.orange { --dot: var(--bs-sev-2); }
+.bs-result-clause.red { --dot: var(--bs-sev-3); }
 
 .bs-result-footer {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    text-align: center;
-}
-
-.bs-result-footer p {
-    font-size: 10px;
-    color: #64748b;
-    margin: 0;
-}
-
-.bs-result-grade {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 800;
-    flex-shrink: 0;
+    gap: 6px;
+    padding: 9px 14px;
+    border-top: 1px solid var(--bs-line);
+    background: rgba(255, 255, 255, 0.015);
 }
 
-.bs-result-grade.safe { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-.bs-result-grade.notable { background: rgba(234, 179, 8, 0.1); color: #eab308; }
-.bs-result-grade.caution { background: rgba(249, 115, 22, 0.1); color: #f97316; }
-.bs-result-grade.danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.bs-result-footer p {
+    font-size: 11px;
+    color: var(--bs-fg-subtle);
+}
 
 /* ==========================================================================
-   High Contrast / Forced Colors Support (a11y)
+   Accessibility
    ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    #blind-sight-overlay,
+    #blind-sight-modal,
+    #blind-sight-prompt-banner,
+    #bs-scanning-banner,
+    #bs-result-card,
+    .bs-confirm-input.invalid {
+        animation: none !important;
+    }
+    .bs-scanning-spinner { animation-duration: 2.4s; }
+}
+
 @media (forced-colors: active) {
     #blind-sight-modal,
     #blind-sight-prompt-banner,
     #bs-result-card,
     #bs-scanning-banner {
         border: 2px solid CanvasText !important;
-        background-color: Canvas !important;
+        background: Canvas !important;
         box-shadow: none !important;
     }
     .bs-btn,
     .bs-prompt-scan-btn,
+    .bs-prompt-later-btn,
     .bs-prompt-dismiss-btn,
     .bs-result-close {
         border: 1px solid ButtonText !important;
-        background-color: ButtonFace !important;
+        background: ButtonFace !important;
         color: ButtonText !important;
     }
     .bs-confirm-input {
         border: 1px solid FieldText !important;
-        background-color: Field !important;
+        background: Field !important;
         color: FieldText !important;
     }
     .bs-btn:focus,
@@ -662,7 +803,7 @@
     }
     .bs-clause-item,
     .bs-result-clause {
-        border-left: 4px solid CanvasText !important;
+        border: 1px solid CanvasText !important;
         background: transparent !important;
     }
 }

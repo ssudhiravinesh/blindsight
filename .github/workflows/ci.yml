@@ -2,53 +2,83 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
-  validate:
+  extension:
+    name: Extension (lint, types, tests, build, audit)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
         with:
-          node-node: 20
+          node-version: 20
+          cache: pnpm
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 11.8.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Cache pnpm files
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Lint Code
+      - name: Lint
         run: pnpm run lint
 
-      - name: Check TypeScript Types
+      - name: Typecheck
         run: pnpm run typecheck
 
-      - name: Run Core & Cloud Unit Tests
-        run: |
-          pnpm --filter @blindsight/core test
-          pnpm --filter @blindsight/cloud test
+      - name: Unit tests
+        run: pnpm run test
 
-      - name: Build Monorepo
+      - name: Build
         run: pnpm run build
+
+      - name: Dependency audit
+        run: pnpm audit --audit-level=moderate
+
+  edge-functions:
+    name: Edge functions (Deno lint + typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/functions
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Lint
+        run: deno lint --config deno.json
+
+      - name: Typecheck
+        run: deno check --config deno.json */index.ts _shared/*.ts
+
+  database:
+    name: Database (migrations + pgTAP security tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+
+      - name: Apply migrations to a fresh database
+        run: supabase db start
+
+      - name: Run pgTAP tests
+        run: supabase test db

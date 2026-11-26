@@ -7,6 +7,7 @@
 export * from './types';
 export * from './storage';
 export * from './openai';
+export * from './api';
 export * from './alternatives';
 export * from './detector';
 export * from './extractor';
@@ -16,3 +17,4 @@ export * from './utils/hash';
 export * from './utils/i18n';
 export * from './utils/lru-cache';
 
+export * from './utils/url-guard';

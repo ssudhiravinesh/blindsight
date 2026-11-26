@@ -2,81 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bs-bg-primary: #121212;
-  --bs-bg-secondary: #1E2026;
-  --bs-bg-tertiary: #2D3139;
-  --bs-text-primary: #FFFFFF;
-  --bs-text-secondary: #9FA6B2;
-  --bs-text-muted: #737A86;
-  --bs-accent: #1098FC;
-  --bs-accent-hover: #037DD6;
-  --bs-danger: #D73A4A;
-  --bs-success: #2DA44E;
-  --bs-warning: #E3B341;
-  --bs-border: #3B4046;
-}
+@layer base {
+  html,
+  body {
+    width: 380px;
+    min-height: 520px;
+    max-height: 600px;
+    @apply bg-ink-900 text-fg font-sans antialiased;
+    font-size: 13px;
+    line-height: 1.5;
+    font-feature-settings: 'cv11', 'ss01';
+    color-scheme: dark;
+  }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(120% 60% at 50% -10%, rgba(139, 124, 255, 0.14), transparent 60%),
+      radial-gradient(80% 40% at 100% 0%, rgba(91, 140, 255, 0.08), transparent 60%);
+    background-repeat: no-repeat;
+  }
 
-html, body, #root {
-  width: 380px;
-  min-height: 500px;
-  max-height: 600px;
-  overflow-y: auto;
-  background: var(--bs-bg-primary);
-  color: var(--bs-text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-}
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-ink-900;
+  }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--bs-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--bs-text-muted); }
+  ::selection {
+    @apply bg-accent/30 text-fg;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.16); }
+}
 
 @layer components {
-  .bs-glass {
-    background: var(--bs-bg-secondary);
-    border: 1px solid var(--bs-border);
-    border-radius: 8px;
+  .surface {
+    @apply rounded-2xl border border-line bg-ink-850/80 shadow-card backdrop-blur;
   }
 
-  /* Clean, subtle backgrounds for the status cards, rather than full gradients */
-  .bs-gradient-safe {
-    background-color: rgba(45, 164, 78, 0.05);
-    border-color: rgba(45, 164, 78, 0.2);
+  .eyebrow {
+    @apply text-2xs font-semibold uppercase tracking-[0.12em] text-fg-subtle;
   }
 
-  .bs-gradient-notable {
-    background-color: rgba(227, 179, 65, 0.05);
-    border-color: rgba(227, 179, 65, 0.2);
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-medium transition
+           duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]
+           disabled:active:scale-100;
   }
 
-  .bs-gradient-caution {
-    background-color: rgba(215, 58, 74, 0.05);
-    border-color: rgba(215, 58, 74, 0.2);
+  .btn-primary {
+    @apply btn h-11 w-full text-[13.5px] text-white shadow-glow;
+    background-image: linear-gradient(135deg, #8B7CFF 0%, #6E63FF 45%, #5B8CFF 100%);
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+  .btn-ghost {
+    @apply btn h-9 border border-line bg-white/[0.03] px-3 text-xs text-fg-muted hover:border-line-strong
+           hover:bg-white/[0.06] hover:text-fg;
   }
 
-  .bs-gradient-danger {
-    background-color: rgba(215, 58, 74, 0.1);
-    border-color: rgba(215, 58, 74, 0.3);
+  .icon-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-fg-muted transition
+           hover:bg-white/[0.06] hover:text-fg;
+  }
+
+  .kbd {
+    @apply inline-flex h-5 min-w-[20px] items-center justify-center rounded-md border border-line-strong
+           bg-white/[0.04] px-1.5 font-mono text-2xs text-fg-muted;
+  }
+
+  .skeleton {
+    @apply rounded-md;
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
   }
 }
 
-@keyframes slide-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
-.animate-slide-in { animation: slide-in 0.3s ease forwards; }
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-  50% { box-shadow: 0 0 16px 4px rgba(99, 102, 241, 0.3); }
-}
-.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }

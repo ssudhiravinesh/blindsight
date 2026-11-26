@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  */
 import type { Clause, AISuggestedAlternative } from '../../types';
+import { CLAUSE_INFO } from '../../types';
 import { getAlternatives } from '../../alternatives';
-import { el } from '../renderer';
+import { el, icon } from '../renderer';
 import { blockButtons, unblockButtons } from '../button-blocker';
 import { t } from '../../utils/i18n';
 
@@ -17,8 +18,10 @@ const CONFIRMATION_PHRASE = 'I PROCEED';
  */
 function trapFocus(container: HTMLElement): () => void {
     const focusableSelector = 'a[href], input:not([disabled]), button:not([disabled]), [tabindex="0"]';
-    
+
     const getFocusable = () => Array.from(container.querySelectorAll<HTMLElement>(focusableSelector));
+    // Inside a shadow root document.activeElement is the host, so ask the root.
+    const focused = () => (container.getRootNode() as Document | ShadowRoot).activeElement;
 
     const handleKeydown = (e: KeyboardEvent) => {
         if (e.key !== 'Tab') return;
@@ -30,12 +33,12 @@ function trapFocus(container: HTMLElement): () => void {
         const last = focusable[focusable.length - 1];
 
         if (e.shiftKey) {
-            if (document.activeElement === first) {
+            if (focused() === first) {
                 last.focus();
                 e.preventDefault();
             }
         } else {
-            if (document.activeElement === last) {
+            if (focused() === last) {
                 first.focus();
                 e.preventDefault();
             }
@@ -44,12 +47,10 @@ function trapFocus(container: HTMLElement): () => void {
 
     container.addEventListener('keydown', handleKeydown);
 
-    // Initial focus placement
+    // Start on the safe action so a stray Enter leaves rather than proceeds.
     setTimeout(() => {
-        const focusable = getFocusable();
-        if (focusable.length > 0) {
-            focusable[0].focus();
-        }
+        const safe = container.querySelector<HTMLElement>("#blind-sight-abort-btn");
+        (safe ?? getFocusable()[0])?.focus();
     }, 50);
 
     return () => {
@@ -57,12 +58,28 @@ function trapFocus(container: HTMLElement): () => void {
     };
 }
 
-function buildClausesListDOM(clauses: Clause[], severityClass: 'orange' | 'red'): HTMLElement[] {
-    return clauses.map((c) =>
-        el('li', { className: `bs-clause-item ${severityClass}` }, [
-            c.explanation ?? c.quote ?? 'Concerning clause'
-        ])
-    );
+function buildClausesListDOM(clauses: Clause[]): HTMLElement[] {
+    return [...clauses]
+        .sort((a, b) => (b.severity ?? 0) - (a.severity ?? 0))
+        .map((c) => {
+            const info = CLAUSE_INFO[c.type] ?? CLAUSE_INFO.DEFAULT;
+            const level = (c.severity ?? 0) >= 3 ? 'red' : (c.severity ?? 0) >= 2 ? 'orange' : 'yellow';
+            return el('li', { className: `bs-clause-item ${level}` }, [
+                el('span', { className: 'bs-clause-name' }, [info.name]),
+                el('span', { className: 'bs-clause-text' }, [c.explanation ?? c.quote ?? 'Concerning clause'])
+            ]);
+        });
+}
+
+function altCard(name: string, url: string, reason: string, badge: string): HTMLElement {
+    return el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', className: 'bs-alt-card' }, [
+        el('span', { className: 'bs-alt-icon' }, [badge]),
+        el('div', { className: 'bs-alt-info' }, [
+            el('div', { className: 'bs-alt-name' }, [name]),
+            el('div', { className: 'bs-alt-reason' }, [reason])
+        ]),
+        el('span', { className: 'bs-alt-arrow' }, [icon('arrow', 14)])
+    ]);
 }
 
 function buildAlternativesDOM(
@@ -74,59 +91,36 @@ function buildAlternativesDOM(
         const alts = getAlternatives(category, hostname);
         if (alts.displayName !== 'Online Service' && alts.alternatives.length) {
             const section = el('div', { className: 'bs-alt-section' }, [
-                el('div', { className: 'bs-alt-title' }, [t('saferAlts', `🛡️ Safer ${alts.displayName} Alternatives`, [alts.displayName])])
+                el('div', { className: 'bs-alt-title' }, [t('saferAlts', `Safer ${alts.displayName} alternatives`, [alts.displayName])])
             ]);
-            alts.alternatives.slice(0, 3).forEach((alt) => {
-                section.appendChild(
-                    el('a', {
-                        href: alt.url,
-                        target: '_blank',
-                        rel: 'noopener noreferrer',
-                        className: 'bs-alt-card'
-                    }, [
-                        el('span', { className: 'bs-alt-icon' }, [alt.icon]),
-                        el('div', { className: 'bs-alt-info' }, [
-                            el('div', { className: 'bs-alt-name' }, [alt.name]),
-                            el('div', { className: 'bs-alt-reason' }, [alt.reason])
-                        ]),
-                        el('span', { className: 'bs-alt-arrow' }, ['→'])
-                    ])
-                );
-            });
+            alts.alternatives.slice(0, 3).forEach((alt) => section.appendChild(altCard(alt.name, alt.url, alt.reason, alt.icon)));
             return section;
         }
     }
 
     if (aiAlternatives && aiAlternatives.length > 0) {
         const section = el('div', { className: 'bs-alt-section' }, [
-            el('div', { className: 'bs-alt-title' }, [t('aiAlts', '🤖 AI-Suggested Alternatives')])
+            el('div', { className: 'bs-alt-title' }, [icon('sparkles', 12), t('aiAlts', 'AI-suggested alternatives')])
         ]);
-        aiAlternatives.slice(0, 3).forEach((alt) => {
-            section.appendChild(
-                el('a', {
-                    href: alt.url,
-                    target: '_blank',
-                    rel: 'noopener noreferrer',
-                    className: 'bs-alt-card'
-                }, [
-                    el('span', { className: 'bs-alt-icon' }, ['🔗']),
-                    el('div', { className: 'bs-alt-info' }, [
-                        el('div', { className: 'bs-alt-name' }, [alt.name]),
-                        el('div', { className: 'bs-alt-reason' }, [alt.reason])
-                    ]),
-                    el('span', { className: 'bs-alt-arrow' }, ['→'])
-                ])
-            );
-        });
-        section.appendChild(
-            el('div', {
-                style: 'font-size:10px;color:#64748b;text-align:center;margin-top:6px;'
-            }, [t('aiAltWarning', 'AI-suggested — verify before visiting')])
+        aiAlternatives.slice(0, 3).forEach((alt) =>
+            section.appendChild(altCard(alt.name, alt.url, alt.reason, alt.name.charAt(0).toUpperCase()))
         );
+        section.appendChild(el('div', { className: 'bs-alt-note' }, [t('aiAltWarning', 'Suggested by AI. Verify before signing up.')]));
         return section;
     }
 
     return null;
+}
+
+function modalHeader(tone: 'orange' | 'red', title: string, subtitle: string): HTMLElement {
+    return el('div', { className: `bs-modal-header ${tone}` }, [
+        el('div', { className: 'bs-modal-icon' }, [icon(tone === 'red' ? 'octagon' : 'alert', 22)]),
+        el('div', { className: 'bs-modal-heading' }, [
+            el('div', { className: 'bs-modal-eyebrow' }, [tone === 'red' ? 'Grade F · Critical' : 'Grade C · Cautionary']),
+            el('div', { id: 'bs-modal-title-id', className: 'bs-modal-title' }, [title]),
+            el('div', { id: 'bs-modal-subtitle-id', className: 'bs-modal-subtitle' }, [subtitle])
+        ])
+    ]);
 }
 
 export function createOrangeModal(
@@ -148,7 +142,7 @@ export function createOrangeModal(
             disabled: 'true',
             'aria-label': t('waitCountdownLabel', `Wait ${ORANGE_COUNTDOWN_SECONDS} seconds to proceed`, [ORANGE_COUNTDOWN_SECONDS])
         },
-        [t('waitCountdownPrefix', '⏳ Wait '), countdownEl, t('waitCountdownSuffix', ' seconds...')]
+        [t('waitCountdownPrefix', 'Wait '), countdownEl, t('waitCountdownSuffix', 's to continue')]
     ) as HTMLButtonElement;
 
     const abortBtn = el(
@@ -158,7 +152,7 @@ export function createOrangeModal(
             className: 'bs-btn bs-btn-abort',
             'aria-label': t('leavePage', 'Leave this page')
         },
-        [t('leavePageBtn', '✕ Leave This Page')]
+        [t('leavePageBtn', 'Leave this page')]
     );
 
     const modal = el(
@@ -171,14 +165,13 @@ export function createOrangeModal(
             'aria-describedby': 'bs-modal-subtitle-id'
         },
         [
-            el('div', { className: 'bs-modal-header orange' }, [
-                el('div', { id: 'bs-modal-title-id', className: 'bs-modal-title' }, [t('cautionaryTermsDetected', '⚠️ Cautionary Terms Detected')]),
-                el('div', { id: 'bs-modal-subtitle-id', className: 'bs-modal-subtitle' }, [
-                    t('cautionaryTermsDesc', `Blind-Sight found concerning terms in $1's agreement`, [name])
-                ])
-            ]),
+            modalHeader(
+                'orange',
+                t('cautionaryTermsDetected', 'Cautionary terms detected'),
+                t('cautionaryTermsDesc', `Blind-Sight found concerning terms in $1's agreement`, [name])
+            ),
             el('div', { className: 'bs-modal-body' }, [
-                el('ul', { className: 'bs-clause-list' }, buildClausesListDOM(clauses, 'orange')),
+                el('ul', { className: 'bs-clause-list' }, buildClausesListDOM(clauses)),
                 buildAlternativesDOM(options.category, options.hostname, options.aiAlternatives)
             ]),
             el('div', { className: 'bs-modal-footer' }, [abortBtn, proceedBtn])
@@ -193,16 +186,16 @@ export function createOrangeModal(
         countdownEl.textContent = String(countdown);
         proceedBtn.setAttribute('aria-label', t('waitCountdownLabel', `Wait ${countdown} seconds to proceed`, [countdown]));
         // Re-construct countdown content for translation compatibility if needed
-        proceedBtn.innerHTML = '';
-        proceedBtn.appendChild(document.createTextNode(t('waitCountdownPrefix', '⏳ Wait ')));
+        proceedBtn.replaceChildren();
+        proceedBtn.appendChild(document.createTextNode(t('waitCountdownPrefix', 'Wait ')));
         proceedBtn.appendChild(countdownEl);
-        proceedBtn.appendChild(document.createTextNode(t('waitCountdownSuffix', ' seconds...')));
+        proceedBtn.appendChild(document.createTextNode(t('waitCountdownSuffix', 's to continue')));
 
         if (countdown <= 0) {
             clearInterval(countdownInterval);
             proceedBtn.removeAttribute('disabled');
-            proceedBtn.textContent = t('readTermsProceed', "✓ I've Read the Terms - Proceed");
-            proceedBtn.setAttribute('aria-label', t('readTermsProceed', "✓ I've Read the Terms - Proceed"));
+            proceedBtn.textContent = t('readTermsProceed', "I've read the terms, continue");
+            proceedBtn.setAttribute('aria-label', t('readTermsProceed', "I've read the terms, continue"));
         }
     }, 1000);
 
@@ -257,7 +250,7 @@ export function createRedModal(
         id: 'blind-sight-confirm-input',
         className: 'bs-confirm-input',
         type: 'text',
-        placeholder: t('typeToUnlock', `Type "${CONFIRMATION_PHRASE}"...`, [CONFIRMATION_PHRASE]),
+        placeholder: CONFIRMATION_PHRASE,
         autocomplete: 'off',
         'aria-label': t('typeToUnlock', `Type "${CONFIRMATION_PHRASE}" to unlock proceed button`, [CONFIRMATION_PHRASE])
     }) as HTMLInputElement;
@@ -270,7 +263,7 @@ export function createRedModal(
             disabled: 'true',
             'aria-label': t('typeToUnlock', `Type "${CONFIRMATION_PHRASE}" to unlock proceed button`, [CONFIRMATION_PHRASE])
         },
-        [t('typeToUnlock', `🔒 Type "${CONFIRMATION_PHRASE}" to Unlock`, [CONFIRMATION_PHRASE])]
+        [t('proceedRisk', 'Continue at my own risk')]
     ) as HTMLButtonElement;
 
     const abortBtn = el(
@@ -280,7 +273,7 @@ export function createRedModal(
             className: 'bs-btn bs-btn-abort',
             'aria-label': t('leavePage', 'Leave this page')
         },
-        [t('leavePageBtn', '✕ Leave This Page')]
+        [t('leavePageBtn', 'Leave this page')]
     );
 
     const modal = el(
@@ -293,23 +286,25 @@ export function createRedModal(
             'aria-describedby': 'bs-modal-subtitle-id'
         },
         [
-            el('div', { className: 'bs-modal-header red' }, [
-                el('div', { id: 'bs-modal-title-id', className: 'bs-modal-title' }, [t('criticalTermsDetected', '🚨 Critical Terms — High Risk')]),
-                el('div', { id: 'bs-modal-subtitle-id', className: 'bs-modal-subtitle' }, [
-                    t('criticalTermsDesc', `Blind-Sight detected aggressive terms in $1's agreement`, [name])
-                ])
-            ]),
+            modalHeader(
+                'red',
+                t('criticalTermsDetected', 'Critical terms: high risk'),
+                t('criticalTermsDesc', `Blind-Sight detected aggressive terms in $1's agreement`, [name])
+            ),
             el('div', { className: 'bs-modal-body' }, [
-                el('ul', { className: 'bs-clause-list' }, buildClausesListDOM(clauses, 'red')),
-                buildAlternativesDOM(options.category, options.hostname, options.aiAlternatives),
+                el('ul', { className: 'bs-clause-list' }, buildClausesListDOM(clauses)),
+                buildAlternativesDOM(options.category, options.hostname, options.aiAlternatives)
+            ]),
+            el('div', { className: 'bs-modal-footer' }, [
                 el('div', { className: 'bs-confirm-label' }, [
                     t('typeToUnlockLabelPrefix', 'Type '),
                     el('strong', {}, [`"${CONFIRMATION_PHRASE}"`]),
                     t('typeToUnlockLabelSuffix', ' to unlock')
                 ]),
-                confirmInput
-            ]),
-            el('div', { className: 'bs-modal-footer' }, [abortBtn, proceedBtn])
+                confirmInput,
+                abortBtn,
+                proceedBtn
+            ])
         ]
     );
 
@@ -323,11 +318,11 @@ export function createRedModal(
         if (isValid) {
             confirmInput.classList.add('valid');
             proceedBtn.removeAttribute('disabled');
-            proceedBtn.textContent = t('proceedRisk', '🔓 Proceed at My Own Risk');
+            proceedBtn.textContent = t('proceedRisk', 'Continue at my own risk');
             proceedBtn.setAttribute('aria-label', t('proceedRisk', 'Proceed at my own risk'));
         } else {
             proceedBtn.setAttribute('disabled', 'true');
-            proceedBtn.textContent = t('typeToUnlock', `🔒 Type "${CONFIRMATION_PHRASE}" to Unlock`, [CONFIRMATION_PHRASE]);
+            proceedBtn.textContent = t('proceedRisk', 'Continue at my own risk');
             proceedBtn.setAttribute('aria-label', t('typeToUnlock', `Type "${CONFIRMATION_PHRASE}" to unlock`, [CONFIRMATION_PHRASE]));
         }
     };

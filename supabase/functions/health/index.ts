@@ -1,68 +1,44 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { handler, json, requireMethod } from "../_shared/http.ts";
+import { hasCronSecret } from "../_shared/auth.ts";
+import { serviceClient } from "../_shared/supabase.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+/**
+ * Public callers get a bare liveness status. Dependency details (which reveal
+ * configuration) are only returned to callers holding the cron secret.
+ */
+Deno.serve(handler(async (req) => {
+  requireMethod(req, "GET");
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const supabase = serviceClient();
+  const { error: dbError } = await supabase.from("tos_cache").select("id", { head: true, count: "exact" }).limit(1);
 
-  const status: Record<string, any> = {
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    services: {}
-  };
-
-  try {
-    // 1. Check Database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { error: dbError } = await supabase.from("tos_cache").select("count").limit(1);
-    status.services.database = dbError ? { status: "error", message: dbError.message } : "ok";
-
-    // 2. Check Upstash Redis
-    const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
-    const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
-    
-    if (redisUrl && redisToken) {
-      try {
-        const start = Date.now();
-        const res = await fetch(`${redisUrl}/ping`, {
-          headers: { Authorization: `Bearer ${redisToken}` }
-        });
-        if (res.ok) {
-          status.services.redis = { status: "ok", latency_ms: Date.now() - start };
-        } else {
-          status.services.redis = { status: "error", message: `HTTP ${res.status}` };
-        }
-      } catch (err) {
-        status.services.redis = { status: "error", message: (err as Error).message };
-      }
-    } else {
-      status.services.redis = "not_configured";
+  let redis: "ok" | "error" | "not_configured" = "not_configured";
+  const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
+  const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
+  if (redisUrl && redisToken) {
+    try {
+      const res = await fetch(`${redisUrl}/ping`, {
+        headers: { Authorization: `Bearer ${redisToken}` },
+        signal: AbortSignal.timeout(3000),
+      });
+      redis = res.ok ? "ok" : "error";
+    } catch {
+      redis = "error";
     }
-
-    // 3. Check LLM Keys Presence
-    status.services.gemini = Deno.env.get("GEMINI_API_KEY") ? "configured" : "missing";
-    status.services.groq = Deno.env.get("GROQ_API_KEY") ? "configured" : "missing";
-
-    const overallHealthy = !dbError && (status.services.redis?.status !== "error");
-    status.status = overallHealthy ? "healthy" : "degraded";
-
-    return new Response(JSON.stringify(status), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: overallHealthy ? 200 : 500
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500
-    });
   }
-});
+
+  const healthy = !dbError && redis !== "error";
+  const body: Record<string, unknown> = { status: healthy ? "healthy" : "degraded" };
+
+  if (hasCronSecret(req)) {
+    body.services = {
+      database: dbError ? "error" : "ok",
+      redis,
+      groq: Deno.env.get("GROQ_API_KEY") ? "configured" : "missing",
+      gemini: Deno.env.get("GEMINI_API_KEY") ? "configured" : "missing",
+      jev: Deno.env.get("TYPESAFE_API_KEY") ? "configured" : "missing",
+    };
+  }
+
+  return json(req, body, healthy ? 200 : 503);
+}));

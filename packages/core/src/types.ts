@@ -95,6 +95,8 @@ export interface Clause {
     quote?: string;
     explanation: string;
     mitigation?: string | null;
+    /** Jev's 0-1 confidence in this clause's severity, when verified. */
+    confidence?: number;
 }
 
 export type ServiceCategory =
@@ -167,6 +169,8 @@ export interface ScanResult {
     rawResponse?: string;
     aiAlternatives?: AISuggestedAlternative[];
     scanDurationMs?: number;
+    /** Present when the backend verified the analysis with Jev (TypeSafe AI). */
+    verification?: { model: string; confidence: number; droppedClauses: number };
 }
 
 export interface ScanError {

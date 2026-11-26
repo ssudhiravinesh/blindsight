@@ -4,10 +4,9 @@
     "version": "4.0.0",
     "description": "__MSG_extDescription__",
     "default_locale": "en",
+    "minimum_chrome_version": "116",
     "permissions": [
-        "activeTab",
         "storage",
-        "scripting",
         "alarms",
         "notifications",
         "contextMenus"
@@ -15,6 +14,9 @@
     "host_permissions": [
         "<all_urls>"
     ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
     "action": {
         "default_popup": "src/popup/index.html",
         "default_icon": {
@@ -52,15 +54,5 @@
             },
             "description": "Scan current page with Blind-Sight"
         }
-    },
-    "web_accessible_resources": [
-        {
-            "resources": [
-                "src/popup/index.html"
-            ],
-            "matches": [
-                "<all_urls>"
-            ]
-        }
-    ]
+    }
 }
