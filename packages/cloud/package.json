@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@blindsight/core": "workspace:*",
-    "@sentry/browser": "^7.114.0",
+    "@sentry/browser": "^11.16.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
