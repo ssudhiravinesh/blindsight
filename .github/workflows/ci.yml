@@ -21,7 +21,7 @@ jobs:
     name: Extension (lint, types, tests, build, audit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v4
 
@@ -55,7 +55,7 @@ jobs:
       run:
         working-directory: supabase/functions
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: denoland/setup-deno@v2
         with:
@@ -71,7 +71,7 @@ jobs:
     name: Database (migrations + pgTAP security tests)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: supabase/setup-cli@v1
         with:
